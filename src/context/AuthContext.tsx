@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
 import { User, mockUsers } from '../data/mockData';
+import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
+import { firebaseApp } from '../firebase';
 
 interface AuthContextType {
   user: User | null;
@@ -12,23 +14,28 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null); // Start unauthenticated
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = (username: string, password: string) => {
-    setIsLoading(true);
-    // Simulate network request
-    setTimeout(() => {
-      if (username === 'AdminZJ' && password === 'Pakistan1947') {
-        setUser({ ...mockUsers[0], name: 'AdminZJ', role: 'superadmin' });
-      } else {
-        alert('Invalid username or password.');
-      }
+  React.useEffect(() => {
+    const unsubscribe = onAuthStateChanged(getAuth(firebaseApp), (firebaseUser) => {
+      setUser(firebaseUser ? { ...mockUsers[0], name: 'AdminZJ', role: 'superadmin' } : null);
       setIsLoading(false);
-    }, 500);
+    });
+    return unsubscribe;
+  }, []);
+
+  const login = async (username: string, password: string) => {
+    setIsLoading(true);
+    try {
+      await signInWithEmailAndPassword(getAuth(firebaseApp), username === 'AdminZJ' ? 'adminzj@zwananjawkhela.com' : username, password);
+    } catch {
+      alert('Invalid username or password.');
+      setIsLoading(false);
+    }
   };
 
   const logout = () => {
-    setUser(null);
+    void signOut(getAuth(firebaseApp));
   };
 
   return (
