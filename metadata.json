@@ -1,0 +1,6 @@
+{
+  "name": "Zwanan Jawkhela",
+  "description": "Community welfare, mutual support, and local governance for the Jawkhela area.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
