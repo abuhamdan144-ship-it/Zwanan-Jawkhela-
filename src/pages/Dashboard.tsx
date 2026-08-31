@@ -1,157 +1,42 @@
-import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { Users, FileText, Image as ImageIcon, Heart, CheckCircle, XCircle } from 'lucide-react';
-import { mockUsers } from '../data/mockData';
+import { CheckCircle, Edit3, FileText, Heart, Image as ImageIcon, Plus, Trash2, Users, XCircle } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
+import { mockActivityFeed, mockDonations, mockNews, mockUsers } from '../data/mockData';
+
+type Tab = 'members' | 'news' | 'activity' | 'donations';
 
 export default function Dashboard() {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'members' | 'news' | 'donations' | 'activity'>('members');
+  const [tab, setTab] = useState<Tab>('members');
+  const [members, setMembers] = useState(() => JSON.parse(localStorage.getItem('zj-members') || 'null') || mockUsers);
+  const [news, setNews] = useState(() => JSON.parse(localStorage.getItem('zj-news') || 'null') || mockNews);
+  const [activity, setActivity] = useState(() => JSON.parse(localStorage.getItem('zj-activity') || 'null') || mockActivityFeed);
+  const [donations, setDonations] = useState(() => JSON.parse(localStorage.getItem('zj-donations') || 'null') || mockDonations);
+  const [editing, setEditing] = useState<any>(null);
+  const [draft, setDraft] = useState<any>({});
 
-  if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) {
-    return <Navigate to="/" replace />;
-  }
+  useEffect(() => { localStorage.setItem('zj-members', JSON.stringify(members)); }, [members]);
+  useEffect(() => { localStorage.setItem('zj-news', JSON.stringify(news)); }, [news]);
+  useEffect(() => { localStorage.setItem('zj-activity', JSON.stringify(activity)); }, [activity]);
+  useEffect(() => { localStorage.setItem('zj-donations', JSON.stringify(donations)); }, [donations]);
 
-  const pendingMembers = mockUsers.filter(u => u.status === 'pending');
+  if (!user || (user.role !== 'admin' && user.role !== 'superadmin')) return <Navigate to="/" replace />;
 
-  return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex flex-col md:flex-row gap-8">
-      {/* Sidebar */}
-      <div className="w-full md:w-64 shrink-0">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-          <div className="p-4 bg-gray-50 border-b border-gray-100 text-center">
-            <h2 className="font-bold text-gray-900">Admin Portal</h2>
-            <p className="text-xs text-gray-500 capitalize">{user.role}</p>
-          </div>
-          <nav className="flex flex-col p-2 space-y-1">
-            <button 
-              onClick={() => setActiveTab('members')}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${activeTab === 'members' ? 'bg-amber-50 text-amber-700' : 'text-gray-600 hover:bg-gray-50'}`}
-            >
-              <Users className="w-4 h-4" /> Manage Members
-            </button>
-            <button 
-              onClick={() => setActiveTab('news')}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${activeTab === 'news' ? 'bg-amber-50 text-amber-700' : 'text-gray-600 hover:bg-gray-50'}`}
-            >
-              <FileText className="w-4 h-4" /> Post News
-            </button>
-            <button 
-              onClick={() => setActiveTab('activity')}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${activeTab === 'activity' ? 'bg-amber-50 text-amber-700' : 'text-gray-600 hover:bg-gray-50'}`}
-            >
-              <ImageIcon className="w-4 h-4" /> Activity Feed
-            </button>
-            <button 
-              onClick={() => setActiveTab('donations')}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium ${activeTab === 'donations' ? 'bg-amber-50 text-amber-700' : 'text-gray-600 hover:bg-gray-50'}`}
-            >
-              <Heart className="w-4 h-4" /> Record Donation
-            </button>
-          </nav>
-        </div>
-      </div>
+  const config = {
+    members: { label: 'Members', icon: Users, title: 'Member approvals', add: 'Add member' },
+    news: { label: 'News', icon: FileText, title: 'News & announcements', add: 'Add news' },
+    activity: { label: 'Activity', icon: ImageIcon, title: 'Community activity', add: 'Add activity' },
+    donations: { label: 'Donations', icon: Heart, title: 'Donation ledger', add: 'Add donation' },
+  }[tab];
 
-      {/* Main Content */}
-      <div className="flex-grow">
-        {activeTab === 'members' && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-gray-900">Pending Approvals</h2>
-            {pendingMembers.length === 0 ? (
-              <p className="text-gray-500 bg-white p-6 rounded-xl border border-gray-100">No pending membership requests.</p>
-            ) : (
-              <div className="space-y-4">
-                {pendingMembers.map(member => (
-                  <div key={member.id} className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <h3 className="font-bold text-gray-900">{member.name}</h3>
-                      <p className="text-sm text-gray-500">CNIC: {member.cnic} • Address: {member.address}</p>
-                      <p className="text-sm text-gray-500">Phone: {member.phone} • Blood: {member.bloodGroup}</p>
-                    </div>
-                    <div className="flex gap-2">
-                      <button className="flex items-center gap-1 bg-green-50 text-green-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-green-100">
-                        <CheckCircle className="w-4 h-4" /> Approve
-                      </button>
-                      <button className="flex items-center gap-1 bg-red-50 text-red-700 px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-red-100">
-                        <XCircle className="w-4 h-4" /> Reject
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+  const openAdd = () => { setEditing({ type: tab, id: null }); setDraft(tab === 'members' ? { name: '', fatherName: '', cnic: '', phone: '', address: '', bloodGroup: 'O+', status: 'approved', role: 'member', canDonateBlood: false } : tab === 'news' ? { title: '', category: 'Announcement', date: new Date().toISOString().slice(0, 10), description: '', comments: [] } : tab === 'activity' ? { imageUrl: '', description: '', date: new Date().toISOString().slice(0, 10) } : { donorName: '', amount: 0, purpose: '', date: new Date().toISOString().slice(0, 10) }); };
+  const openEdit = (item: any) => { setEditing({ type: tab, id: item.id }); setDraft({ ...item }); };
+  const remove = (id: string) => { if (!window.confirm('Delete this item?')) return; if (tab === 'members') setMembers((v: any[]) => v.filter(x => x.id !== id)); if (tab === 'news') setNews((v: any[]) => v.filter(x => x.id !== id)); if (tab === 'activity') setActivity((v: any[]) => v.filter(x => x.id !== id)); if (tab === 'donations') setDonations((v: any[]) => v.filter(x => x.id !== id)); };
+  const save = (e: React.FormEvent) => { e.preventDefault(); const id = draft.id || `${tab.slice(0, 1).toUpperCase()}-${Date.now()}`; const item = { ...draft, id }; const setter: any = { members: setMembers, news: setNews, activity: setActivity, donations: setDonations }[tab]; setter((items: any[]) => editing.id ? items.map(x => x.id === editing.id ? item : x) : [item, ...items]); setEditing(null); };
+  const approve = (id: string, status: 'approved' | 'rejected') => setMembers((items: any[]) => items.map(item => item.id === id ? { ...item, status } : item));
+  const list: any[] = tab === 'members' ? members : tab === 'news' ? news : tab === 'activity' ? activity : donations;
+  const pending = useMemo(() => members.filter((member: any) => member.status === 'pending'), [members]);
 
-        {activeTab === 'news' && (
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Post New Announcement</h2>
-            <form className="space-y-4" onSubmit={e => e.preventDefault()}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-                <select className="w-full border border-gray-300 rounded-md p-2">
-                  <option>Death</option><option>Marriage</option><option>Nikah</option><option>Engagement</option><option>Announcement</option>
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title (English)</label>
-                <input type="text" className="w-full border border-gray-300 rounded-md p-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title (Urdu)</label>
-                <input type="text" dir="rtl" className="w-full border border-gray-300 rounded-md p-2 font-urdu" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                <textarea rows={4} className="w-full border border-gray-300 rounded-md p-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Names Involved (comma separated)</label>
-                <input type="text" className="w-full border border-gray-300 rounded-md p-2" />
-              </div>
-              <button className="bg-amber-600 text-white px-4 py-2 rounded-md hover:bg-amber-700">Publish News</button>
-            </form>
-          </div>
-        )}
-
-        {activeTab === 'activity' && (
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Upload Activity Photo</h2>
-            <form className="space-y-4" onSubmit={e => e.preventDefault()}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image Upload</label>
-                <input type="file" className="w-full border border-gray-300 rounded-md p-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Short Description</label>
-                <input type="text" className="w-full border border-gray-300 rounded-md p-2" />
-              </div>
-              <button className="bg-amber-600 text-white px-4 py-2 rounded-md hover:bg-amber-700">Post to Feed</button>
-            </form>
-          </div>
-        )}
-
-        {activeTab === 'donations' && (
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-            <h2 className="text-xl font-bold text-gray-900 mb-6">Record Offline Donation</h2>
-            <form className="space-y-4" onSubmit={e => e.preventDefault()}>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Donor Name</label>
-                <input type="text" placeholder="Enter name or 'Anonymous'" className="w-full border border-gray-300 rounded-md p-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Amount (PKR)</label>
-                <input type="number" className="w-full border border-gray-300 rounded-md p-2" />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Purpose / Project</label>
-                <input type="text" className="w-full border border-gray-300 rounded-md p-2" />
-              </div>
-              <button className="bg-green-600 text-white px-4 py-2 rounded-md hover:bg-green-700">Add to Ledger</button>
-            </form>
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  return <div className="min-h-screen bg-[#f5f7f4] px-4 py-8 text-gray-900 sm:px-6 lg:px-8"><div className="mx-auto max-w-7xl"><div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-amber-600">Zwanan Jawkhela</p><h1 className="mt-2 font-serif text-4xl font-medium text-primary-950">Admin workspace</h1><p className="mt-1 text-sm text-gray-500">Manage every public category from one place.</p></div><div className="rounded-xl bg-primary-950 px-4 py-3 text-right text-white"><p className="text-xs text-white/60">Signed in as</p><p className="font-bold">{user.name}</p></div></div><div className="grid gap-6 lg:grid-cols-[230px_1fr]"><aside className="h-fit rounded-2xl border border-gray-200 bg-white p-2 shadow-sm">{(Object.keys(config) as Tab[]).map((key) => { const item = config[key]; const Icon = item.icon; return <button key={key} onClick={() => { setTab(key); setEditing(null); }} className={`flex w-full items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-semibold transition ${tab === key ? 'bg-primary-950 text-white' : 'text-gray-600 hover:bg-gray-50'}`}><Icon size={17} />{item.label}</button>; })}</aside><section><div className="mb-4 flex items-center justify-between"><div><h2 className="font-serif text-3xl font-medium">{config.title}</h2>{tab === 'members' && <p className="mt-1 text-sm text-gray-500">{pending.length} pending approval{pending.length === 1 ? '' : 's'}</p>}</div><button onClick={openAdd} className="flex items-center gap-2 rounded-xl bg-primary-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-primary-600"><Plus size={16} /> {config.add}</button></div>{editing && <form onSubmit={save} className="mb-5 grid gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-5 sm:grid-cols-2">{Object.keys(draft).filter(key => !['id', 'comments', 'role', 'canDonateBlood', 'status'].includes(key)).map(key => <label key={key} className="text-xs font-bold capitalize text-gray-600">{key}<input required={key !== 'imageUrl'} type={key === 'amount' ? 'number' : key === 'date' ? 'date' : 'text'} value={draft[key] ?? ''} onChange={e => setDraft({ ...draft, [key]: key === 'amount' ? Number(e.target.value) : e.target.value })} className="mt-1 w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-normal outline-none focus:border-primary-500" /></label>)}<div className="flex items-end gap-2"><button className="rounded-lg bg-primary-700 px-4 py-2 text-sm font-bold text-white">Save changes</button><button type="button" onClick={() => setEditing(null)} className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-bold">Cancel</button></div></form>}<div className="space-y-3">{list.map(item => <div key={item.id} className="flex flex-col gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between"><div className="min-w-0">{tab === 'activity' ? <><p className="font-semibold">{item.description}</p><p className="text-xs text-gray-500">{item.date}</p></> : tab === 'donations' ? <><p className="font-semibold">{item.donorName} · PKR {Number(item.amount).toLocaleString()}</p><p className="text-xs text-gray-500">{item.purpose} · {item.date}</p></> : <><p className="font-semibold">{item.name || item.title}</p><p className="truncate text-xs text-gray-500">{item.cnic || item.description || item.category || item.id}</p></>}{tab === 'members' && <span className={`mt-2 inline-flex rounded-full px-2 py-1 text-[10px] font-bold uppercase ${item.status === 'approved' ? 'bg-green-100 text-green-700' : item.status === 'rejected' ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-700'}`}>{item.status}</span>}</div><div className="flex shrink-0 items-center gap-2">{tab === 'members' && item.status === 'pending' && <><button onClick={() => approve(item.id, 'approved')} className="rounded-lg bg-green-50 p-2 text-green-700" title="Approve"><CheckCircle size={17} /></button><button onClick={() => approve(item.id, 'rejected')} className="rounded-lg bg-red-50 p-2 text-red-700" title="Reject"><XCircle size={17} /></button></>}<button onClick={() => openEdit(item)} className="rounded-lg bg-gray-100 p-2 text-gray-600 hover:bg-gray-200" title="Edit"><Edit3 size={16} /></button><button onClick={() => remove(item.id)} className="rounded-lg bg-red-50 p-2 text-red-600 hover:bg-red-100" title="Delete"><Trash2 size={16} /></button></div></div>)}{list.length === 0 && <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center text-sm text-gray-500">No records yet. Use “{config.add}” to create one.</div>}</div></section></div></div></div>;
 }

@@ -4,6 +4,24 @@ import { useAuth } from '../context/AuthContext';
 import { mockUsers } from '../data/mockData';
 import { Download, Search, CheckCircle, Clock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { jsPDF } from 'jspdf';
+
+function downloadCardImage(user: NonNullable<ReturnType<typeof useAuth>['user']>) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560"><rect width="900" height="560" rx="32" fill="#052e16"/><rect x="28" y="28" width="844" height="504" rx="22" fill="#0f5132" stroke="#eab308" stroke-width="3"/><text x="70" y="100" fill="#facc15" font-family="Arial" font-size="34" font-weight="700">ZWANAN JAWKHELA</text><text x="70" y="135" fill="#dcfce7" font-family="Arial" font-size="18">OFFICIAL MEMBERSHIP CARD</text><circle cx="130" cy="285" r="72" fill="#dcfce7"/><text x="130" y="300" text-anchor="middle" fill="#166534" font-family="Arial" font-size="58" font-weight="700">${user.name.charAt(0)}</text><text x="245" y="260" fill="#ffffff" font-family="Arial" font-size="30" font-weight="700">${user.name}</text><text x="245" y="295" fill="#bbf7d0" font-family="Arial" font-size="18">Member ID: ${user.id}</text><text x="245" y="330" fill="#bbf7d0" font-family="Arial" font-size="18">Blood Group: ${user.bloodGroup}</text><text x="70" y="465" fill="#bbf7d0" font-family="Arial" font-size="18">Valid until: ${user.validUntil || 'Active'}</text><text x="650" y="465" fill="#facc15" font-family="Arial" font-size="18">JAWKHELA · BUNER</text></svg>`;
+  const blob = new Blob([svg], { type: 'image/svg+xml' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a'); link.href = url; link.download = `${user.id}-membership-card.svg`; link.click(); URL.revokeObjectURL(url);
+}
+
+function downloadCardPdf(user: NonNullable<ReturnType<typeof useAuth>['user']>) {
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [90, 56] });
+  pdf.setFillColor(5, 46, 22); pdf.roundedRect(3, 3, 84, 50, 4, 4, 'F');
+  pdf.setTextColor(250, 204, 21); pdf.setFontSize(13); pdf.text('ZWANAN JAWKHELA', 8, 12);
+  pdf.setTextColor(220, 252, 231); pdf.setFontSize(6); pdf.text('OFFICIAL MEMBERSHIP CARD', 8, 16);
+  pdf.setFillColor(220, 252, 231); pdf.circle(17, 30, 8, 'F'); pdf.setTextColor(22, 101, 52); pdf.setFontSize(16); pdf.text(user.name.charAt(0), 14.5, 34);
+  pdf.setTextColor(255, 255, 255); pdf.setFontSize(10); pdf.text(user.name, 29, 29); pdf.setTextColor(187, 247, 208); pdf.setFontSize(6); pdf.text(`Member ID: ${user.id}`, 29, 34); pdf.text(`Blood Group: ${user.bloodGroup}`, 29, 39); pdf.text(`Valid until: ${user.validUntil || 'Active'}`, 8, 48);
+  pdf.save(`${user.id}-membership-card.pdf`);
+}
 
 export default function Membership() {
   const { user } = useAuth();
@@ -165,10 +183,10 @@ export default function Membership() {
               </div>
             </div>
             <div className="bg-gray-50 p-4 border-t flex justify-center">
-              <button className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm">
-                <Download className="w-4 h-4" />
-                Download PDF
-              </button>
+              <div className="flex flex-wrap justify-center gap-3">
+                <button onClick={() => downloadCardPdf(user)} className="flex items-center gap-2 text-primary-600 hover:text-primary-700 font-medium text-sm"><Download className="w-4 h-4" /> Download PDF</button>
+                <button onClick={() => downloadCardImage(user)} className="flex items-center gap-2 text-amber-600 hover:text-amber-700 font-medium text-sm"><Download className="w-4 h-4" /> Download Image</button>
+              </div>
             </div>
           </div>
         </motion.div>
