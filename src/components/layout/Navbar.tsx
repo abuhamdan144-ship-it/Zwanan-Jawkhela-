@@ -96,7 +96,7 @@ export function Navbar() {
               <form onSubmit={handleLogin} className="flex items-center gap-2 ml-4">
                 <input 
                   type="text" 
-                  placeholder="Username or CNIC..." 
+                  placeholder="Username..." 
                   value={loginCnic}
                   onChange={e => setLoginCnic(e.target.value)}
                   className="px-3 py-1.5 text-sm text-gray-900 bg-white/90 focus:bg-white rounded-lg outline-none w-36 transition-colors font-medium border border-transparent focus:border-primary-500"
@@ -176,7 +176,7 @@ export function Navbar() {
                   <form onSubmit={handleLogin} className="px-3 flex flex-col gap-3">
                     <input 
                       type="text" 
-                      placeholder="Username or CNIC..." 
+                      placeholder="Username..." 
                       value={loginCnic}
                       onChange={e => setLoginCnic(e.target.value)}
                       className="px-4 py-3 text-sm text-gray-900 bg-white rounded-xl outline-none w-full font-medium"

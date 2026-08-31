@@ -3,7 +3,7 @@ import { User, mockUsers } from '../data/mockData';
 
 interface AuthContextType {
   user: User | null;
-  login: (identifier: string, password?: string) => void;
+  login: (username: string, password: string) => void;
   logout: () => void;
   isLoading: boolean;
 }
@@ -14,18 +14,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null); // Start unauthenticated
   const [isLoading, setIsLoading] = useState(false);
 
-  const login = (identifier: string, password?: string) => {
+  const login = (username: string, password: string) => {
     setIsLoading(true);
     // Simulate network request
     setTimeout(() => {
-      const isAdminLogin = identifier === 'AdminZJ' && password === 'Pakistan1947';
-      const foundUser = mockUsers.find(u => u.cnic === identifier);
-      if (isAdminLogin) {
+      if (username === 'AdminZJ' && password === 'Pakistan1947') {
         setUser({ ...mockUsers[0], name: 'AdminZJ', role: 'superadmin' });
-      } else if (foundUser && foundUser.status === 'approved') {
-        setUser(foundUser);
       } else {
-        alert('Invalid credentials or member not approved.');
+        alert('Invalid username or password.');
       }
       setIsLoading(false);
     }, 500);
