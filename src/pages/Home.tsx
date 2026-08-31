@@ -1,55 +1,291 @@
 import React from 'react';
-import { motion } from 'motion/react';
+import { motion, useScroll, useTransform } from 'motion/react';
 import { Link } from 'react-router-dom';
-import { ArrowUpRight, ArrowRight, Bell, CalendarDays, Clock3, Droplets, HeartHandshake, MapPin, Phone, ShieldAlert, Users } from 'lucide-react';
+import { Users, Heart, Droplets, ArrowRight, Clock, Contact, Phone, AlertCircle, BellRing } from 'lucide-react';
 import { mockActivityFeed, mockNews, mockEvents, emergencyContacts } from '../data/mockData';
 import { format } from 'date-fns';
 import { ImageWithFallback } from '../components/ui/ImageWithFallback';
 
-const fade = { hidden: { opacity: 0, y: 18 }, visible: { opacity: 1, y: 0, transition: { duration: .45 } } };
+const fadeUp = {
+  hidden: { opacity: 0, y: 30 },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: "easeOut" } }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: { opacity: 1, transition: { staggerChildren: 0.1 } }
+};
 
 export default function Home() {
-  const event = mockEvents[0];
+  const latestNews = mockNews.slice(0, 3);
+  const nextEvent = mockEvents[0];
+  const { scrollY } = useScroll();
+  const y1 = useTransform(scrollY, [0, 1000], [0, 300]);
+  const opacity = useTransform(scrollY, [0, 400], [1, 0]);
+
   return (
-    <div className="min-h-screen overflow-hidden bg-[#f5f7f4] text-[#10251e]">
-      <section className="relative overflow-hidden bg-[#09251c] text-white">
-        <div className="absolute -right-28 -top-40 h-[520px] w-[520px] rounded-full bg-[#3f8769]/25 blur-3xl" />
-        <div className="absolute -bottom-52 left-1/3 h-[420px] w-[420px] rounded-full bg-[#d8aa37]/15 blur-3xl" />
-        <div className="relative mx-auto max-w-7xl px-5 pb-20 pt-28 sm:px-8 lg:px-10 lg:pb-28 lg:pt-36">
-          <div className="grid items-center gap-12 lg:grid-cols-[1.05fr_.95fr] lg:gap-20">
-            <motion.div initial="hidden" animate="visible" variants={fade}>
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-semibold text-[#f3ca63] backdrop-blur"><span className="h-2 w-2 rounded-full bg-[#f3ca63]" /> Jawkhela · Buner, KPK</div>
-              <h1 className="max-w-2xl font-serif text-5xl font-medium leading-[.98] tracking-[-.04em] sm:text-7xl lg:text-[86px]">A stronger<br /><span className="text-[#edc35c]">community,</span><br />together.</h1>
-              <p className="mt-7 max-w-xl text-base leading-7 text-white/65 sm:text-lg">A shared space for mutual support, local action, and the people who make Jawkhela home.</p>
-              <div className="mt-9 flex flex-wrap gap-3"><Link to="/membership" className="inline-flex items-center gap-2 rounded-xl bg-[#edc35c] px-5 py-3.5 text-sm font-bold text-[#09251c] transition hover:-translate-y-0.5 hover:bg-[#f5d77e]">Join the community <ArrowUpRight size={16} /></Link><Link to="/donations" className="inline-flex items-center gap-2 rounded-xl border border-white/20 bg-white/5 px-5 py-3.5 text-sm font-semibold text-white transition hover:bg-white/10">Support our work <ArrowRight size={16} /></Link></div>
-              <div className="mt-12 flex items-center gap-3 text-xs text-white/55"><span className="flex -space-x-2"><span className="grid h-8 w-8 place-items-center rounded-full border-2 border-[#09251c] bg-[#d8b96a] text-[#09251c]">J</span><span className="grid h-8 w-8 place-items-center rounded-full border-2 border-[#09251c] bg-[#6ea98c] text-[#09251c]">B</span><span className="grid h-8 w-8 place-items-center rounded-full border-2 border-[#09251c] bg-[#f0eee1] text-[#09251c]">+</span></span>Built by neighbors,<br /><b className="text-white">for neighbors.</b></div>
-            </motion.div>
-            <motion.div initial={{ opacity: 0, scale: .96 }} animate={{ opacity: 1, scale: 1 }} transition={{ duration: .7, delay: .15 }} className="relative">
-              <div className="relative h-[390px] overflow-hidden rounded-[28px] border border-white/20 shadow-2xl sm:h-[470px]"><img src="https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&q=85&w=1200" alt="Green mountain landscape around Jawkhela" className="h-full w-full object-cover opacity-75" /><div className="absolute inset-0 bg-gradient-to-t from-[#09251c] via-transparent to-transparent" /><div className="absolute bottom-6 left-6"><div className="flex items-center gap-2 text-sm font-semibold"><MapPin size={15} className="text-[#edc35c]" /> Jawkhela, Buner</div><p className="mt-1 pl-6 text-xs text-white/55">Where our shared story begins</p></div></div>
-              <div className="absolute -bottom-5 -left-5 rounded-2xl border border-white/15 bg-[#163d2d]/90 p-4 shadow-xl backdrop-blur"><div className="flex items-center gap-3"><div className="rounded-xl bg-[#edc35c]/15 p-2 text-[#edc35c]"><ShieldAlert size={19} /></div><div><p className="text-xs font-bold">Community first</p><p className="mt-1 text-[10px] text-white/55">Our shared promise</p></div></div></div>
-            </motion.div>
-          </div>
-        </div>
+    <div className="flex flex-col gap-12 pb-12 bg-gray-50">
+      {/* Hero Section */}
+      <section className="relative h-[85vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-950">
+        <motion.div style={{ y: y1 }} className="absolute inset-0 w-full h-full">
+          <img 
+            src="https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&q=80" 
+            alt="Jawkhela Landscape" 
+            className="w-full h-full object-cover opacity-60 mix-blend-overlay"
+          />
+        </motion.div>
+        
+        {/* Dark Gradient Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-950/70 via-primary-900/40 to-gray-50 z-10" />
+        
+        {/* Noise Texture Layer */}
+        <div className="absolute inset-0 bg-noise z-10" />
+        
+        <motion.div 
+          style={{ opacity }}
+          className="relative z-20 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col items-center text-center mt-12"
+        >
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="flex justify-center mb-6"
+          >
+            <div className="bg-white p-2 rounded-2xl shadow-xl backdrop-blur-sm inline-block">
+              <img src="/IMG_0313.jpeg" alt="Zwanan Jawkhela Logo" className="h-20 md:h-28 w-auto object-contain" />
+            </div>
+          </motion.div>
+
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.1 }}
+            className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white shadow-lg text-sm font-medium mb-8"
+          >
+            <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+            Community Welfare Organization
+          </motion.div>
+          
+          <motion.h1 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.2 }}
+            className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold mb-6 text-white tracking-tight drop-shadow-lg font-urdu"
+          >
+            Zwanan Jawkhela
+          </motion.h1>
+          
+          <motion.p 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.3 }}
+            className="text-lg md:text-xl max-w-2xl text-primary-50 mb-10 leading-relaxed font-light drop-shadow-md"
+          >
+            Dedicated to community welfare, mutual support, and local governance exclusively for the residents and families of Jawkhela (Buner, KPK).
+          </motion.p>
+          
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.4 }}
+            className="flex flex-wrap justify-center gap-4"
+          >
+            <Link to="/membership">
+              <motion.button whileTap={{ scale: 0.97 }} className="bg-white text-primary-950 px-8 py-3.5 rounded-xl font-bold shadow-xl hover:bg-gray-100 transition-colors flex items-center gap-2">
+                Join the Community
+              </motion.button>
+            </Link>
+            <Link to="/donations">
+              <motion.button whileTap={{ scale: 0.97 }} className="bg-amber-500 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-amber-500/30 hover:bg-amber-600 transition-colors border border-amber-400">
+                Make a Donation
+              </motion.button>
+            </Link>
+          </motion.div>
+        </motion.div>
       </section>
 
-      <main className="mx-auto max-w-7xl space-y-24 px-5 pb-20 sm:px-8 lg:px-10">
-        <motion.section initial="hidden" whileInView="visible" viewport={{ once: true, margin: '-80px' }} variants={fade} className="-mt-10 grid gap-4 sm:grid-cols-3">
-          {[{ title: 'Membership', desc: 'Stay connected to the community.', icon: Users, href: '/membership', tone: 'bg-blue-50 text-blue-600' }, { title: 'Donations', desc: 'Back projects that matter locally.', icon: HeartHandshake, href: '/donations', tone: 'bg-amber-50 text-amber-600' }, { title: 'Blood Bank', desc: 'Find emergency donors quickly.', icon: Droplets, href: '/blood-bank', tone: 'bg-red-50 text-red-600' }].map(({ title, desc, icon: Icon, href, tone }, i) => <Link to={href} key={title} className="group rounded-2xl border border-[#dfe8e1] bg-white p-5 shadow-[0_18px_40px_-28px_rgba(12,55,38,.5)] transition hover:-translate-y-1 hover:border-[#b8cfbd] hover:shadow-xl"><div className="flex items-start justify-between"><span className={`grid h-11 w-11 place-items-center rounded-xl ${tone}`}><Icon size={21} /></span><span className="text-xs text-[#9baaa2]">0{i + 1}</span></div><h2 className="mt-5 font-serif text-2xl font-medium">{title}</h2><p className="mt-1 text-sm text-[#718079]">{desc}</p><span className="mt-6 flex items-center gap-1 text-xs font-bold text-[#1e774f]">Explore <ArrowRight size={14} className="transition group-hover:translate-x-1" /></span></Link>)}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-24 z-20 relative">
+        
+        {/* Quick Links / Stats */}
+        <motion.section 
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="visible"
+          viewport={{ once: true, margin: "-100px" }}
+          className="grid grid-cols-1 md:grid-cols-3 gap-6 -mt-32"
+        >
+          {[
+            { title: 'Membership', icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', link: '/membership', desc: 'Join the community database.' },
+            { title: 'Donations', icon: Heart, color: 'text-amber-600', bg: 'bg-amber-50', link: '/donations', desc: 'Support our local initiatives.' },
+            { title: 'Blood Bank', icon: Droplets, color: 'text-red-600', bg: 'bg-red-50', link: '/blood-bank', desc: 'Emergency blood donors.' }
+          ].map((item, i) => (
+            <motion.div variants={fadeUp} key={i}>
+              <Link to={item.link} className="block group h-full">
+                <div className="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] p-6 border border-gray-100 hover:border-gray-200 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 h-full flex items-start gap-4">
+                  <div className={`p-3.5 ${item.bg} ${item.color} rounded-xl group-hover:scale-110 transition-transform duration-300 shrink-0`}>
+                    <item.icon className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-gray-900 text-lg font-serif">{item.title}</h3>
+                    <p className="text-sm text-gray-500 mt-1 mb-3">{item.desc}</p>
+                    <span className={`text-sm ${item.color} font-semibold flex items-center gap-1 group-hover:gap-2 transition-all`}>
+                      Access <ArrowRight className="w-4 h-4"/>
+                    </span>
+                  </div>
+                </div>
+              </Link>
+            </motion.div>
+          ))}
         </motion.section>
 
-        <section className="grid gap-12 lg:grid-cols-[1.45fr_.75fr]">
-          <div className="space-y-16">
-            <section><div className="mb-7 flex items-end justify-between border-b border-[#dbe5dd] pb-4"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-[#c08d22]">From the field</p><h2 className="mt-2 font-serif text-4xl font-medium tracking-tight sm:text-5xl">Community <span className="text-[#1e774f]">in motion.</span></h2></div><span className="hidden text-xs text-[#718079] sm:block">Recent efforts and fieldwork</span></div><div className="grid gap-5 sm:grid-cols-2">{mockActivityFeed.map((activity) => <article key={activity.id} className="overflow-hidden rounded-2xl border border-[#dfe8e1] bg-white shadow-sm transition hover:-translate-y-1 hover:shadow-lg"><div className="aspect-[4/3] overflow-hidden bg-[#e6eee8]"><ImageWithFallback src={activity.imageUrl} alt="Community activity" className="h-full w-full" /></div><div className="p-5"><p className="font-medium leading-6 text-[#20362d]">{activity.description}</p><p className="mt-3 text-[11px] font-bold uppercase tracking-wider text-[#9aa9a1]">{format(new Date(activity.date), 'MMM dd, yyyy')}</p></div></article>)}</div></section>
-            <section><div className="mb-7 flex items-end justify-between border-b border-[#dbe5dd] pb-4"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-[#c08d22]">Stay informed</p><h2 className="mt-2 font-serif text-4xl font-medium tracking-tight sm:text-5xl">Latest <span className="text-[#1e774f]">news.</span></h2></div><Link to="/news" className="flex items-center gap-1 rounded-lg bg-[#eaf4ed] px-3 py-2 text-xs font-bold text-[#1e774f]">View all <ArrowRight size={14} /></Link></div><div className="space-y-3">{mockNews.slice(0, 3).map((news) => <article key={news.id} className="group flex gap-4 rounded-2xl border border-[#dfe8e1] bg-white p-5 transition hover:-translate-y-0.5 hover:shadow-md"><span className="h-fit rounded-lg bg-[#f4f7f4] px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-[#638071]">{news.category}</span><div className="min-w-0 flex-1"><h3 className="font-serif text-xl font-medium text-[#193329] group-hover:text-[#1e774f]">{news.titleUrdu || news.title}</h3><p className="mt-1 text-sm leading-6 text-[#718079]" dir="auto">{news.descriptionUrdu || news.description}</p><div className="mt-3 flex items-center gap-3 text-[11px] text-[#9aa9a1]"><span>{format(new Date(news.date), 'MMMM dd, yyyy')}</span>{news.comments.length > 0 && <span className="flex items-center gap-1"><Bell size={12} /> {news.comments.length} response</span>}</div></div></article>)}</div></section>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+          
+          {/* Left Column: Main Content */}
+          <div className="lg:col-span-2 space-y-16">
+            
+            {/* Live Activity Feed */}
+            <motion.section
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+            >
+              <motion.div variants={fadeUp} className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900 font-serif">Community Activity</h2>
+                  <p className="text-gray-500 mt-1">Recent efforts and fieldwork</p>
+                </div>
+              </motion.div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {mockActivityFeed.map((activity) => (
+                  <motion.div variants={fadeUp} key={activity.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <div className="aspect-[4/3] w-full relative overflow-hidden">
+                      <ImageWithFallback src={activity.imageUrl} alt="Activity" className="w-full h-full group-hover:scale-105 transition-transform duration-700" />
+                    </div>
+                    <div className="p-5">
+                      <p className="text-gray-900 font-medium leading-relaxed">{activity.description}</p>
+                      <p className="text-xs font-semibold text-gray-400 mt-3 uppercase tracking-wider">{format(new Date(activity.date), 'MMM dd, yyyy')}</p>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.section>
+
+            {/* Latest News */}
+            <motion.section
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true, margin: "-50px" }}
+            >
+              <motion.div variants={fadeUp} className="flex justify-between items-end mb-8 border-b border-gray-200 pb-4">
+                <div>
+                  <h2 className="text-3xl font-bold text-gray-900 font-serif">Latest News</h2>
+                  <p className="text-gray-500 mt-1">Announcements from Jawkhela</p>
+                </div>
+                <Link to="/news" className="text-sm text-primary-600 font-bold hover:text-primary-700 transition-colors flex items-center gap-1 group bg-primary-50 px-3 py-1.5 rounded-lg">
+                  View All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform"/>
+                </Link>
+              </motion.div>
+              <div className="space-y-4">
+                {latestNews.map((news) => (
+                  <motion.div variants={fadeUp} key={news.id} className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-5 items-start hover:shadow-md hover:border-gray-200 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+                    <div className="px-3 py-1.5 bg-gray-50 text-gray-600 text-xs font-bold rounded-lg shrink-0 border border-gray-100 shadow-sm">
+                      {news.category}
+                    </div>
+                    <div className="flex-grow">
+                      <h3 className="text-xl font-bold text-gray-900 font-urdu group-hover:text-primary-700 transition-colors">{news.titleUrdu || news.title}</h3>
+                      <p className="text-sm text-gray-600 mt-2 font-urdu leading-relaxed" dir="auto">{news.descriptionUrdu || news.description}</p>
+                      <div className="flex items-center gap-4 mt-4 text-xs font-medium text-gray-400">
+                        <span>{format(new Date(news.date), 'MMMM dd, yyyy')}</span>
+                        {news.comments.length > 0 && <span className="flex items-center gap-1"><BellRing className="w-3 h-3"/> {news.comments.length} responses</span>}
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.section>
           </div>
 
-          <aside className="space-y-5">
-            {event && <div className="rounded-3xl bg-[#10382a] p-7 text-white shadow-xl"><div className="flex items-center gap-2 text-xs font-bold uppercase tracking-[.16em] text-[#edc35c]"><CalendarDays size={15} /> Upcoming event</div><h3 className="mt-8 font-serif text-4xl font-medium leading-tight">{event.title}</h3><div className="mt-7 space-y-3 text-sm text-white/65"><p className="flex items-center gap-3"><Clock3 size={16} className="text-[#edc35c]" /> {format(new Date(event.date), 'PPP')}</p><p className="flex items-center gap-3"><MapPin size={16} className="text-[#edc35c]" /> {event.location}</p></div><Link to="/events" className="mt-8 flex items-center justify-between rounded-xl bg-white px-4 py-3 text-sm font-bold text-[#10382a] transition hover:bg-[#edc35c]">View event details <ArrowUpRight size={16} /></Link></div>}
-            <div className="rounded-3xl border border-[#dfe8e1] bg-white p-6 shadow-sm"><div className="flex items-center justify-between"><h3 className="font-serif text-2xl font-medium">Prayer timings</h3><Clock3 size={18} className="text-[#c08d22]" /></div><div className="mt-5 space-y-1 text-sm">{[['Fajr', '04:15 AM'], ['Dhuhr', '12:15 PM'], ['Asr', '05:00 PM'], ['Maghrib', '07:10 PM'], ['Isha', '08:45 PM']].map(([name, time]) => <div key={name} className={`flex justify-between rounded-xl px-3 py-2.5 ${name === 'Maghrib' ? 'bg-amber-50 font-bold text-amber-800' : 'text-[#718079]'}`}><span>{name}{name === 'Maghrib' && <span className="ml-2 inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />}</span><span>{time}</span></div>)}</div></div>
-            <div className="rounded-3xl border border-red-100 bg-white p-6 shadow-sm"><h3 className="flex items-center gap-2 font-serif text-2xl font-medium"><ShieldAlert size={19} className="text-red-500" /> Emergency contacts</h3><div className="mt-4 space-y-2">{emergencyContacts.map((contact) => <a key={contact.name} href={`tel:${contact.phone}`} className="flex items-center justify-between rounded-xl p-3 transition hover:bg-red-50"><span><b className="block text-xs text-[#20362d]">{contact.name}</b><small className="text-[10px] text-[#9aa9a1]">Available locally</small></span><span className="flex items-center gap-1 text-[11px] font-bold text-red-500"><Phone size={13} /> Call</span></a>)}</div></div>
-          </aside>
-        </section>
-      </main>
+          {/* Right Column: Sidebar */}
+          <motion.div 
+            variants={staggerContainer}
+            initial="hidden"
+            whileInView="visible"
+            viewport={{ once: true, margin: "-50px" }}
+            className="space-y-8"
+          >
+            
+            {/* Upcoming Event Widget */}
+            {nextEvent && (
+              <motion.div variants={fadeUp} className="relative bg-primary-950 text-white rounded-3xl p-8 shadow-xl overflow-hidden border border-primary-800">
+                <div className="absolute top-0 right-0 p-6 opacity-10">
+                  <Clock className="w-32 h-32" />
+                </div>
+                <div className="relative z-10">
+                  <div className="flex items-center gap-2 mb-4">
+                    <motion.div animate={{ scale: [1, 1.2, 1], opacity: [0.7, 1, 0.7] }} transition={{ repeat: Infinity, duration: 2 }} className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <h3 className="font-bold text-amber-400 text-sm tracking-wider uppercase">Upcoming Event</h3>
+                  </div>
+                  <h4 className="text-2xl font-serif font-bold mb-4 leading-tight">{nextEvent.title}</h4>
+                  <div className="space-y-3 text-sm text-primary-100 mb-8 font-medium">
+                    <p className="flex items-center gap-3"><Clock className="w-5 h-5 text-primary-300" /> {format(new Date(nextEvent.date), 'PPP')}</p>
+                    <p className="flex items-center gap-3"><Users className="w-5 h-5 text-primary-300" /> {nextEvent.location}</p>
+                  </div>
+                  <Link to="/events" className="block text-center w-full bg-white text-primary-950 hover:bg-gray-100 py-3 rounded-xl font-bold transition-colors shadow-lg">
+                    View Details
+                  </Link>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Prayer Timings Widget */}
+            <motion.div variants={fadeUp} className="bg-white rounded-3xl p-7 shadow-sm border border-gray-100">
+              <h3 className="font-bold text-gray-900 mb-6 text-center text-lg font-serif">Prayer Timings</h3>
+              <div className="space-y-2 text-sm font-medium">
+                <div className="flex justify-between p-3 rounded-xl text-gray-600"><span className="text-gray-500">Fajr</span><span>04:15 AM</span></div>
+                <div className="flex justify-between p-3 rounded-xl text-gray-600"><span className="text-gray-500">Dhuhr</span><span>12:15 PM</span></div>
+                <div className="flex justify-between p-3 rounded-xl text-gray-600"><span className="text-gray-500">Asr</span><span>05:00 PM</span></div>
+                <div className="flex justify-between p-3 rounded-xl bg-amber-50 border border-amber-100 text-amber-900 shadow-sm relative overflow-hidden">
+                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-amber-500" />
+                  <span className="flex items-center gap-2">
+                    <motion.span animate={{ opacity: [1, 0.5, 1] }} transition={{ repeat: Infinity, duration: 1.5 }} className="w-1.5 h-1.5 rounded-full bg-amber-500" />
+                    Maghrib (Current)
+                  </span>
+                  <span className="font-bold text-amber-700">07:10 PM</span>
+                </div>
+                <div className="flex justify-between p-3 rounded-xl text-gray-600"><span className="text-gray-500">Isha</span><span>08:45 PM</span></div>
+              </div>
+            </motion.div>
+
+            {/* Emergency Contacts */}
+            <motion.div variants={fadeUp} className="bg-white rounded-3xl p-7 shadow-sm border border-gray-100 overflow-hidden relative">
+              <div className="absolute top-0 left-0 w-full h-1 bg-red-500" />
+              <h3 className="font-bold text-gray-900 mb-6 flex items-center gap-2 text-lg font-serif">
+                <AlertCircle className="w-5 h-5 text-red-500" />
+                Emergency Contacts
+              </h3>
+              <div className="space-y-3">
+                {emergencyContacts.map((contact, idx) => (
+                  <a key={idx} href={`tel:${contact.phone}`} className="group flex justify-between items-center p-3 rounded-xl hover:bg-red-50 transition-colors border border-transparent hover:border-red-100">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-red-50 text-red-500 flex items-center justify-center group-hover:scale-110 transition-transform shadow-sm">
+                        {contact.type === 'Police' ? <AlertCircle className="w-5 h-5"/> : contact.type === 'Ambulance' ? <Phone className="w-5 h-5"/> : <Contact className="w-5 h-5"/>}
+                      </div>
+                      <div>
+                        <p className="text-sm font-bold text-gray-900 group-hover:text-red-600 transition-colors">{contact.name}</p>
+                        <p className="text-xs font-medium text-gray-500">{contact.type}</p>
+                      </div>
+                    </div>
+                    <Phone className="w-4 h-4 text-gray-300 group-hover:text-red-500 transition-colors" />
+                  </a>
+                ))}
+              </div>
+            </motion.div>
+
+          </motion.div>
+        </div>
+      </div>
     </div>
   );
 }

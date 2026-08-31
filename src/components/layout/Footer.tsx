@@ -6,7 +6,12 @@ export function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div>
-            <h3 className="text-white text-lg font-bold font-urdu mb-4">Zwanan Jawkhela</h3>
+            <div className="flex items-center gap-2 mb-4">
+              <div className="bg-white p-1 rounded-md inline-block">
+                <img src="/IMG_0313.jpeg" alt="Zwanan Jawkhela Logo" className="h-8 w-auto object-contain" />
+              </div>
+              <h3 className="text-white text-lg font-bold font-urdu">Zwanan Jawkhela</h3>
+            </div>
             <p className="text-sm">
               Community welfare, mutual support, and local governance for the Jawkhela area (Buner, KPK).
             </p>

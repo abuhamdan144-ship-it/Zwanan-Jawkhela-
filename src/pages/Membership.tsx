@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
-import { mockUsers } from '../data/mockData';
 import { Download, Search, CheckCircle, Clock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
+import { db } from '../firebase';
+import { collection, addDoc, onSnapshot, query, where } from 'firebase/firestore';
 
 function downloadCardImage(user: NonNullable<ReturnType<typeof useAuth>['user']>) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560"><rect width="900" height="560" rx="32" fill="#052e16"/><rect x="28" y="28" width="844" height="504" rx="22" fill="#0f5132" stroke="#eab308" stroke-width="3"/><text x="70" y="100" fill="#facc15" font-family="Arial" font-size="34" font-weight="700">ZWANAN JAWKHELA</text><text x="70" y="135" fill="#dcfce7" font-family="Arial" font-size="18">OFFICIAL MEMBERSHIP CARD</text><circle cx="130" cy="285" r="72" fill="#dcfce7"/><text x="130" y="300" text-anchor="middle" fill="#166534" font-family="Arial" font-size="58" font-weight="700">${user.name.charAt(0)}</text><text x="245" y="260" fill="#ffffff" font-family="Arial" font-size="30" font-weight="700">${user.name}</text><text x="245" y="295" fill="#bbf7d0" font-family="Arial" font-size="18">Member ID: ${user.id}</text><text x="245" y="330" fill="#bbf7d0" font-family="Arial" font-size="18">Blood Group: ${user.bloodGroup}</text><text x="70" y="465" fill="#bbf7d0" font-family="Arial" font-size="18">Valid until: ${user.validUntil || 'Active'}</text><text x="650" y="465" fill="#facc15" font-family="Arial" font-size="18">JAWKHELA · BUNER</text></svg>`;
@@ -27,11 +28,43 @@ export default function Membership() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<'register' | 'directory' | 'card'>(user ? 'directory' : 'register');
   const [searchTerm, setSearchTerm] = useState('');
+  const [members, setMembers] = useState<any[]>([]);
+  
+  // Registration form state
+  const [regData, setRegData] = useState({ name: '', fatherName: '', cnic: '', phone: '', address: '', bloodGroup: 'A+' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [regMessage, setRegMessage] = useState({ type: '', text: '' });
 
-  const filteredMembers = mockUsers.filter(m => 
-    m.status === 'approved' && 
-    (m.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-     m.bloodGroup.toLowerCase().includes(searchTerm.toLowerCase()))
+  useEffect(() => {
+    const q = query(collection(db, 'members'), where('status', '==', 'approved'));
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setMembers(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    });
+    return unsubscribe;
+  }, []);
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setRegMessage({ type: '', text: '' });
+    try {
+      await addDoc(collection(db, 'members'), {
+        ...regData,
+        status: 'pending',
+        role: 'member',
+        createdAt: new Date().toISOString()
+      });
+      setRegMessage({ type: 'success', text: 'Registration successful! Your application is pending admin approval.' });
+      setRegData({ name: '', fatherName: '', cnic: '', phone: '', address: '', bloodGroup: 'A+' });
+    } catch (error) {
+      setRegMessage({ type: 'error', text: 'Registration failed. Please check your connection and try again.' });
+    }
+    setIsSubmitting(false);
+  };
+
+  const filteredMembers = members.filter(m => 
+    m.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+    m.bloodGroup?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
@@ -68,43 +101,48 @@ export default function Membership() {
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Membership Application</h2>
           <p className="text-gray-500 mb-6 text-sm">Membership is exclusively for residents and families of Jawkhela. All applications are subject to cabinet approval.</p>
           
-          <form className="space-y-6" onSubmit={(e) => e.preventDefault()}>
+          <form className="space-y-6" onSubmit={handleRegister}>
+            {regMessage.text && (
+              <div className={`p-4 rounded-md text-sm font-medium ${regMessage.type === 'success' ? 'bg-green-50 text-green-800' : 'bg-red-50 text-red-800'}`}>
+                {regMessage.text}
+              </div>
+            )}
             <div className="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-2">
               <div>
                 <label className="block text-sm font-medium text-gray-700">Full Name</label>
-                <input type="text" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                <input required value={regData.name} onChange={e => setRegData({...regData, name: e.target.value})} type="text" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Father's Name</label>
-                <input type="text" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                <input required value={regData.fatherName} onChange={e => setRegData({...regData, fatherName: e.target.value})} type="text" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">CNIC / ID Number</label>
-                <input type="text" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                <input required value={regData.cnic} onChange={e => setRegData({...regData, cnic: e.target.value})} type="text" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Phone / WhatsApp</label>
-                <input type="text" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                <input required value={regData.phone} onChange={e => setRegData({...regData, phone: e.target.value})} type="text" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
               </div>
               <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700">Address in Jawkhela</label>
-                <input type="text" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+                <input required value={regData.address} onChange={e => setRegData({...regData, address: e.target.value})} type="text" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Blood Group</label>
-                <select className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
+                <select value={regData.bloodGroup} onChange={e => setRegData({...regData, bloodGroup: e.target.value})} className="mt-1 block w-full bg-white border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm">
                   <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
                   <option>O+</option><option>O-</option><option>AB+</option><option>AB-</option>
                 </select>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700">Upload Photo</label>
-                <input type="file" className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" />
+                <input type="file" accept="image/*" className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" />
               </div>
             </div>
             <div>
-              <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500">
-                Submit Application
+              <button disabled={isSubmitting} type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50">
+                {isSubmitting ? 'Submitting...' : 'Submit Application'}
               </button>
             </div>
           </form>
@@ -161,6 +199,11 @@ export default function Membership() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center">
           <div className="bg-white w-[350px] rounded-xl overflow-hidden shadow-2xl border border-gray-200">
             <div className="bg-primary-900 text-white p-4 text-center relative">
+              <div className="flex justify-center mb-3">
+                <div className="bg-white p-1.5 rounded-lg shadow-sm">
+                  <img src="/IMG_0313.jpeg" alt="Logo" className="h-10 w-auto object-contain" />
+                </div>
+              </div>
               <h3 className="font-bold font-urdu text-xl tracking-wider">Zwanan Jawkhela</h3>
               <p className="text-xs text-primary-200">Official Membership Card</p>
             </div>
