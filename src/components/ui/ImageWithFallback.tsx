@@ -7,9 +7,9 @@ export function ImageWithFallback({ src, alt, className = '' }: { src?: string, 
 
   if (error) {
     return (
-      <div className={`bg-gray-100 flex flex-col items-center justify-center text-gray-400 ${className}`}>
-        <ImageIcon className="w-8 h-8 opacity-30 mb-2" />
-        <span className="text-xs font-medium">No Image</span>
+      <div className={`bg-gradient-to-br from-primary-900 via-primary-800 to-primary-950 flex flex-col items-center justify-center text-white/75 ${className}`}>
+        <ImageIcon className="w-8 h-8 opacity-60 mb-2" />
+        <span className="text-xs font-medium tracking-wide">Community update</span>
       </div>
     );
   }

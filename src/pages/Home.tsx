@@ -26,7 +26,7 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-12 pb-12 bg-gray-50">
       {/* Hero Section */}
-      <section className="relative h-[85vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-950">
+      <section className="relative h-[76vh] min-h-[560px] flex items-center justify-center overflow-hidden bg-primary-950">
         <motion.div style={{ y: y1 }} className="absolute inset-0 w-full h-full">
           <img 
             src="https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&q=80" 
@@ -36,7 +36,7 @@ export default function Home() {
         </motion.div>
         
         {/* Dark Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-950/70 via-primary-900/40 to-gray-50 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-950/80 via-primary-900/45 to-gray-50 z-10" />
         
         {/* Noise Texture Layer */}
         <div className="absolute inset-0 bg-noise z-10" />
@@ -101,7 +101,7 @@ export default function Home() {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, margin: "-100px" }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 -mt-32"
+          className="grid grid-cols-1 md:grid-cols-3 gap-5 -mt-20"
         >
           {[
             { title: 'Membership', icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', link: '/membership', desc: 'Join the community database.' },
@@ -110,7 +110,7 @@ export default function Home() {
           ].map((item, i) => (
             <motion.div variants={fadeUp} key={i}>
               <Link to={item.link} className="block group h-full">
-                <div className="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] p-6 border border-gray-100 hover:border-gray-200 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 h-full flex items-start gap-4">
+                <div className="bg-white/95 backdrop-blur rounded-2xl shadow-[0_18px_45px_-18px_rgba(5,46,22,0.22)] p-6 border border-gray-100 hover:border-primary-200 hover:shadow-[0_22px_50px_-18px_rgba(5,46,22,0.28)] hover:-translate-y-1 transition-all duration-300 h-full flex items-start gap-4">
                   <div className={`p-3.5 ${item.bg} ${item.color} rounded-xl group-hover:scale-110 transition-transform duration-300 shrink-0`}>
                     <item.icon className="w-6 h-6" />
                   </div>
