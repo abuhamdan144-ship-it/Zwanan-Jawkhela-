@@ -21,6 +21,7 @@ export function Navbar() {
   const location = useLocation();
   const [isOpen, setIsOpen] = useState(false);
   const [loginCnic, setLoginCnic] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
   const [scrolled, setScrolled] = useState(false);
 
   const isHome = location.pathname === '/';
@@ -37,7 +38,7 @@ export function Navbar() {
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (loginCnic) {
-      login(loginCnic);
+      login(loginCnic, loginPassword);
     }
   };
 
@@ -95,10 +96,17 @@ export function Navbar() {
               <form onSubmit={handleLogin} className="flex items-center gap-2 ml-4">
                 <input 
                   type="text" 
-                  placeholder="CNIC to login..." 
+                  placeholder="Username or CNIC..." 
                   value={loginCnic}
                   onChange={e => setLoginCnic(e.target.value)}
                   className="px-3 py-1.5 text-sm text-gray-900 bg-white/90 focus:bg-white rounded-lg outline-none w-36 transition-colors font-medium border border-transparent focus:border-primary-500"
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={loginPassword}
+                  onChange={e => setLoginPassword(e.target.value)}
+                  className="px-3 py-1.5 text-sm text-gray-900 bg-white/90 focus:bg-white rounded-lg outline-none w-28 transition-colors font-medium border border-transparent focus:border-primary-500"
                 />
                 <button type="submit" className="px-4 py-1.5 bg-primary-600 rounded-lg text-sm font-bold text-white hover:bg-primary-500 transition-colors shadow-sm">
                   Login
@@ -168,9 +176,16 @@ export function Navbar() {
                   <form onSubmit={handleLogin} className="px-3 flex flex-col gap-3">
                     <input 
                       type="text" 
-                      placeholder="CNIC to login..." 
+                      placeholder="Username or CNIC..." 
                       value={loginCnic}
                       onChange={e => setLoginCnic(e.target.value)}
+                      className="px-4 py-3 text-sm text-gray-900 bg-white rounded-xl outline-none w-full font-medium"
+                    />
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      value={loginPassword}
+                      onChange={e => setLoginPassword(e.target.value)}
                       className="px-4 py-3 text-sm text-gray-900 bg-white rounded-xl outline-none w-full font-medium"
                     />
                     <button type="submit" className="w-full px-4 py-3 bg-primary-600 rounded-xl text-sm text-white font-bold hover:bg-primary-500 transition-colors">
