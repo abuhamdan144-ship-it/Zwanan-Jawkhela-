@@ -4,8 +4,9 @@ import { useAuth } from '../context/AuthContext';
 import { Download, Search, CheckCircle, Clock } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
-import { db } from '../firebase';
-import { collection, addDoc, onSnapshot, query, where } from 'firebase/firestore';
+import { firebaseApp, db } from '../firebase';
+import { collection, setDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
+import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
 
 function downloadCardImage(user: NonNullable<ReturnType<typeof useAuth>['user']>) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560"><rect width="900" height="560" rx="32" fill="#052e16"/><rect x="28" y="28" width="844" height="504" rx="22" fill="#0f5132" stroke="#eab308" stroke-width="3"/><text x="70" y="100" fill="#facc15" font-family="Arial" font-size="34" font-weight="700">ZWANAN JAWKHELA</text><text x="70" y="135" fill="#dcfce7" font-family="Arial" font-size="18">OFFICIAL MEMBERSHIP CARD</text><circle cx="130" cy="285" r="72" fill="#dcfce7"/><text x="130" y="300" text-anchor="middle" fill="#166534" font-family="Arial" font-size="58" font-weight="700">${user.name.charAt(0)}</text><text x="245" y="260" fill="#ffffff" font-family="Arial" font-size="30" font-weight="700">${user.name}</text><text x="245" y="295" fill="#bbf7d0" font-family="Arial" font-size="18">Member ID: ${user.id}</text><text x="245" y="330" fill="#bbf7d0" font-family="Arial" font-size="18">Blood Group: ${user.bloodGroup}</text><text x="70" y="465" fill="#bbf7d0" font-family="Arial" font-size="18">Valid until: ${user.validUntil || 'Active'}</text><text x="650" y="465" fill="#facc15" font-family="Arial" font-size="18">JAWKHELA · BUNER</text></svg>`;
@@ -31,7 +32,7 @@ export default function Membership() {
   const [members, setMembers] = useState<any[]>([]);
   
   // Registration form state
-  const [regData, setRegData] = useState({ name: '', fatherName: '', cnic: '', phone: '', address: '', bloodGroup: 'A+' });
+  const [regData, setRegData] = useState({ name: '', fatherName: '', cnic: '', phone: '', address: '', bloodGroup: 'A+', password: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [regMessage, setRegMessage] = useState({ type: '', text: '' });
 
@@ -48,16 +49,31 @@ export default function Membership() {
     setIsSubmitting(true);
     setRegMessage({ type: '', text: '' });
     try {
-      await addDoc(collection(db, 'members'), {
-        ...regData,
+      const auth = getAuth(firebaseApp);
+      const cleanCnic = regData.cnic.replace(/[^0-9]/g, '');
+      if (!cleanCnic) throw new Error("Please enter a valid CNIC numbers only.");
+      const email = `${cleanCnic}@zwananjawkhela.com`;
+      
+      const userCredential = await createUserWithEmailAndPassword(auth, email, regData.password);
+      
+      const memberData = {
+        name: regData.name,
+        fatherName: regData.fatherName,
+        cnic: cleanCnic,
+        phone: regData.phone,
+        address: regData.address,
+        bloodGroup: regData.bloodGroup,
         status: 'pending',
         role: 'member',
         createdAt: new Date().toISOString()
-      });
+      };
+      
+      await setDoc(doc(db, 'members', userCredential.user.uid), memberData);
+
       setRegMessage({ type: 'success', text: 'Registration successful! Your application is pending admin approval.' });
-      setRegData({ name: '', fatherName: '', cnic: '', phone: '', address: '', bloodGroup: 'A+' });
-    } catch (error) {
-      setRegMessage({ type: 'error', text: 'Registration failed. Please check your connection and try again.' });
+      setRegData({ name: '', fatherName: '', cnic: '', phone: '', address: '', bloodGroup: 'A+', password: '' });
+    } catch (error: any) {
+      setRegMessage({ type: 'error', text: 'Registration failed: ' + error.message });
     }
     setIsSubmitting(false);
   };
@@ -136,6 +152,10 @@ export default function Membership() {
                 </select>
               </div>
               <div>
+                <label className="block text-sm font-medium text-gray-700">Account Password</label>
+                <input required value={regData.password} onChange={e => setRegData({...regData, password: e.target.value})} type="password" placeholder="Create a strong password" className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary-500 focus:border-primary-500 sm:text-sm" />
+              </div>
+              <div className="sm:col-span-2">
                 <label className="block text-sm font-medium text-gray-700">Upload Photo</label>
                 <input type="file" accept="image/*" className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100" />
               </div>

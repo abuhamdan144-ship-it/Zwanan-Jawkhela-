@@ -1,7 +1,20 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { User, mockUsers } from '../data/mockData';
 import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signOut } from 'firebase/auth';
-import { firebaseApp } from '../firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { firebaseApp, db } from '../firebase';
+
+export interface User {
+  id: string;
+  name: string;
+  fatherName: string;
+  cnic: string;
+  phone: string;
+  address: string;
+  bloodGroup: string;
+  status: 'pending' | 'approved' | 'rejected';
+  role: 'member' | 'admin' | 'superadmin';
+  validUntil?: string;
+}
 
 interface AuthContextType {
   user: User | null;
@@ -17,8 +30,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   React.useEffect(() => {
-    const unsubscribe = onAuthStateChanged(getAuth(firebaseApp), (firebaseUser) => {
-      setUser(firebaseUser ? { ...mockUsers[0], name: 'AdminZJ', role: 'superadmin' } : null);
+    const unsubscribe = onAuthStateChanged(getAuth(firebaseApp), async (firebaseUser) => {
+      if (firebaseUser) {
+        if (firebaseUser.email === 'adminzj@zwananjawkhela.com') {
+          setUser({ id: firebaseUser.uid, name: 'AdminZJ', fatherName: '', cnic: 'AdminZJ', phone: '', address: '', bloodGroup: 'O+', status: 'approved', role: 'superadmin' });
+        } else {
+          try {
+            const userDoc = await getDoc(doc(db, 'members', firebaseUser.uid));
+            if (userDoc.exists()) {
+              setUser({ id: userDoc.id, ...userDoc.data() } as User);
+            } else {
+              setUser({ id: firebaseUser.uid, name: 'Pending User', fatherName: '', cnic: firebaseUser.email?.split('@')[0] || '', phone: '', address: '', bloodGroup: 'O+', status: 'pending', role: 'member' });
+            }
+          } catch (error) {
+            console.error("Error fetching user data:", error);
+            setUser(null);
+          }
+        }
+      } else {
+        setUser(null);
+      }
       setIsLoading(false);
     });
     return unsubscribe;
@@ -27,9 +58,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, password: string) => {
     setIsLoading(true);
     try {
-      await signInWithEmailAndPassword(getAuth(firebaseApp), username === 'AdminZJ' ? 'adminzj@zwananjawkhela.com' : username, password);
-    } catch {
-      alert('Invalid username or password.');
+      const cleanUsername = username === 'AdminZJ' ? 'adminzj' : username.replace(/[^a-zA-Z0-9]/g, '');
+      const email = `${cleanUsername}@zwananjawkhela.com`;
+      await signInWithEmailAndPassword(getAuth(firebaseApp), email, password);
+    } catch (error: any) {
+      alert('Invalid username or password: ' + error.message);
       setIsLoading(false);
     }
   };
