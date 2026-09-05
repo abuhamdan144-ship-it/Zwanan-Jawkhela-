@@ -37,7 +37,7 @@ export default function Home() {
         </motion.div>
         
         {/* Dark Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-950/80 via-primary-900/50 to-[#fdfcf9] z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-950/90 via-primary-950/60 to-[#fdfcf9] z-10" />
         
         {/* Noise Texture Layer */}
         <div className="absolute inset-0 bg-noise z-10" />
@@ -71,7 +71,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.7, delay: 0.2 }}
-            className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold mb-6 text-white tracking-tight drop-shadow-lg font-urdu"
+            className="text-5xl md:text-7xl lg:text-8xl font-serif font-bold mb-6 text-white tracking-tight drop-shadow-lg"
           >
             Zwanan Jawkhela
           </motion.h1>
