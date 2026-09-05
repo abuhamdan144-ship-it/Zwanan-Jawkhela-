@@ -32,10 +32,10 @@ export default function News() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Community News</h1>
+          <h1 className="text-4xl font-bold text-gray-900 font-serif">Community News</h1>
           <p className="text-gray-500 mt-1">Updates and announcements from Jawkhela</p>
         </div>
         
@@ -63,7 +63,7 @@ export default function News() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300"
           >
             {news.photoUrl && (
               <ImageWithFallback src={news.photoUrl} alt={news.title} className="w-full h-64 object-cover" />
@@ -146,7 +146,7 @@ export default function News() {
           </motion.article>
         ))}
         {filteredNews.length === 0 && (
-          <div className="text-center py-12 text-gray-500">
+          <div className="text-center py-20 text-gray-500">
             No news found for this category.
           </div>
         )}

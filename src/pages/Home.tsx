@@ -1,3 +1,4 @@
+import { Logo } from "../components/ui/LogoFallback";
 import React from 'react';
 import { motion, useScroll, useTransform } from 'motion/react';
 import { Link } from 'react-router-dom';
@@ -29,14 +30,14 @@ export default function Home() {
       <section className="relative h-[85vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-950">
         <motion.div style={{ y: y1 }} className="absolute inset-0 w-full h-full">
           <img 
-            src="https://images.unsplash.com/photo-1588668214407-6ea9a6d8c272?auto=format&fit=crop&q=80" 
+            src="https://images.unsplash.com/photo-1542361345-89e58247f2d5?q=80&w=2070&auto=format&fit=crop" 
             alt="Jawkhela Landscape" 
             className="w-full h-full object-cover opacity-60 mix-blend-overlay"
           />
         </motion.div>
         
         {/* Dark Gradient Overlay */}
-        <div className="absolute inset-0 bg-gradient-to-b from-primary-950/70 via-primary-900/40 to-gray-50 z-10" />
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-950/80 via-primary-900/50 to-[#fdfcf9] z-10" />
         
         {/* Noise Texture Layer */}
         <div className="absolute inset-0 bg-noise z-10" />
@@ -52,7 +53,7 @@ export default function Home() {
             className="flex justify-center mb-6"
           >
             <div className="bg-white p-2 rounded-2xl shadow-xl backdrop-blur-sm inline-block">
-              <img src="/IMG_0313.jpeg" alt="Zwanan Jawkhela Logo" className="h-20 md:h-28 w-auto object-contain" />
+              <Logo src="/IMG_0342.JPG" alt="Zwanan Jawkhela Logo" className="h-20 w-20 md:h-28 md:w-28 object-contain" fallbackText="ZJ" />
             </div>
           </motion.div>
 
@@ -91,12 +92,12 @@ export default function Home() {
             className="flex flex-wrap justify-center gap-4"
           >
             <Link to="/membership">
-              <motion.button whileTap={{ scale: 0.97 }} className="bg-white text-primary-950 px-8 py-3.5 rounded-xl font-bold shadow-xl hover:bg-gray-100 transition-colors flex items-center gap-2">
+              <motion.button whileTap={{ scale: 0.97 }} className="bg-primary-600 text-white px-8 py-3.5 rounded-xl font-bold shadow-xl hover:bg-primary-700 transition-colors flex items-center gap-2 border border-primary-500">
                 Join the Community
               </motion.button>
             </Link>
             <Link to="/donations">
-              <motion.button whileTap={{ scale: 0.97 }} className="bg-amber-500 text-white px-8 py-3.5 rounded-xl font-bold shadow-lg shadow-amber-500/30 hover:bg-amber-600 transition-colors border border-amber-400">
+              <motion.button whileTap={{ scale: 0.97 }} className="bg-transparent text-white px-8 py-3.5 rounded-xl font-bold shadow-lg hover:bg-white/10 transition-colors border-2 border-white/80">
                 Make a Donation
               </motion.button>
             </Link>
@@ -104,7 +105,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-24 z-20 relative">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full space-y-32 z-20 relative">
         
         {/* Quick Links / Stats */}
         <motion.section 
@@ -115,20 +116,20 @@ export default function Home() {
           className="grid grid-cols-1 md:grid-cols-3 gap-6 -mt-32"
         >
           {[
-            { title: 'Membership', icon: Users, color: 'text-blue-600', bg: 'bg-blue-50', link: '/membership', desc: 'Join the community database.' },
-            { title: 'Donations', icon: Heart, color: 'text-amber-600', bg: 'bg-amber-50', link: '/donations', desc: 'Support our local initiatives.' },
+            { title: 'Membership', icon: Users, color: 'text-primary-700', bg: 'bg-primary-50', link: '/membership', desc: 'Join the community database.' },
+            { title: 'Donations', icon: Heart, color: 'text-accent-600', bg: 'bg-accent-50', link: '/donations', desc: 'Support our local initiatives.' },
             { title: 'Blood Bank', icon: Droplets, color: 'text-red-600', bg: 'bg-red-50', link: '/blood-bank', desc: 'Emergency blood donors.' }
           ].map((item, i) => (
             <motion.div variants={fadeUp} key={i}>
               <Link to={item.link} className="block group h-full">
-                <div className="bg-white rounded-2xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] p-6 border border-gray-100 hover:border-gray-200 hover:shadow-[0_8px_30px_-4px_rgba(0,0,0,0.1)] hover:-translate-y-1 transition-all duration-300 h-full flex items-start gap-4">
-                  <div className={`p-3.5 ${item.bg} ${item.color} rounded-xl group-hover:scale-110 transition-transform duration-300 shrink-0`}>
-                    <item.icon className="w-6 h-6" />
+                <div className="bg-white rounded-2xl shadow-sm p-8 border border-gray-100 hover:border-gray-200 hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 h-full flex flex-col items-start gap-4">
+                  <div className={`p-4 ${item.bg} ${item.color} rounded-2xl group-hover:scale-110 transition-transform duration-300 shrink-0`}>
+                    <item.icon className="w-8 h-8" />
                   </div>
                   <div>
-                    <h3 className="font-bold text-gray-900 text-lg font-serif">{item.title}</h3>
-                    <p className="text-sm text-gray-500 mt-1 mb-3">{item.desc}</p>
-                    <span className={`text-sm ${item.color} font-semibold flex items-center gap-1 group-hover:gap-2 transition-all`}>
+                    <h3 className="font-bold text-gray-900 text-2xl font-serif mb-2">{item.title}</h3>
+                    <p className="text-base text-gray-600 mb-4 leading-relaxed">{item.desc}</p>
+                    <span className={`text-sm ${item.color} font-bold flex items-center gap-1 group-hover:gap-2 transition-all`}>
                       Access <ArrowRight className="w-4 h-4"/>
                     </span>
                   </div>
@@ -138,10 +139,10 @@ export default function Home() {
           ))}
         </motion.section>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-16">
           
           {/* Left Column: Main Content */}
-          <div className="lg:col-span-2 space-y-16">
+          <div className="lg:col-span-2 space-y-24">
             
             {/* Live Activity Feed */}
             <motion.section
@@ -156,15 +157,15 @@ export default function Home() {
                   <p className="text-gray-500 mt-1">Recent efforts and fieldwork</p>
                 </div>
               </motion.div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
                 {mockActivityFeed.map((activity) => (
-                  <motion.div variants={fadeUp} key={activity.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <motion.div variants={fadeUp} key={activity.id} className="group bg-white rounded-2xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 flex flex-col">
                     <div className="aspect-[4/3] w-full relative overflow-hidden">
-                      <ImageWithFallback src={activity.imageUrl} alt="Activity" className="w-full h-full group-hover:scale-105 transition-transform duration-700" />
+                      <ImageWithFallback src={activity.imageUrl} alt="Activity" className="w-full h-full group-hover:scale-105 transition-transform duration-700 object-cover" />
                     </div>
-                    <div className="p-5">
-                      <p className="text-gray-900 font-medium leading-relaxed">{activity.description}</p>
-                      <p className="text-xs font-semibold text-gray-400 mt-3 uppercase tracking-wider">{format(new Date(activity.date), 'MMM dd, yyyy')}</p>
+                    <div className="p-6 flex-grow flex flex-col justify-between">
+                      <p className="text-gray-900 text-base leading-relaxed mb-4">{activity.description}</p>
+                      <p className="text-xs font-bold text-accent-600 uppercase tracking-wider">{format(new Date(activity.date), 'MMM dd, yyyy')}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -187,18 +188,18 @@ export default function Home() {
                   View All <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform"/>
                 </Link>
               </motion.div>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 {latestNews.map((news) => (
-                  <motion.div variants={fadeUp} key={news.id} className="group bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-5 items-start hover:shadow-md hover:border-gray-200 hover:-translate-y-1 transition-all duration-300 cursor-pointer">
-                    <div className="px-3 py-1.5 bg-gray-50 text-gray-600 text-xs font-bold rounded-lg shrink-0 border border-gray-100 shadow-sm">
+                  <motion.div variants={fadeUp} key={news.id} className="group bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col sm:flex-row gap-6 items-start hover:shadow-lg hover:border-gray-200 hover:-translate-y-1.5 transition-all duration-300 cursor-pointer">
+                    <div className="px-4 py-2 bg-gray-50 text-gray-700 text-xs font-bold rounded-lg shrink-0 border border-gray-200 shadow-sm uppercase tracking-wide">
                       {news.category}
                     </div>
                     <div className="flex-grow">
-                      <h3 className="text-xl font-bold text-gray-900 font-urdu group-hover:text-primary-700 transition-colors">{news.titleUrdu || news.title}</h3>
-                      <p className="text-sm text-gray-600 mt-2 font-urdu leading-relaxed" dir="auto">{news.descriptionUrdu || news.description}</p>
-                      <div className="flex items-center gap-4 mt-4 text-xs font-medium text-gray-400">
+                      <h3 className="text-2xl font-bold text-gray-900 font-serif group-hover:text-primary-700 transition-colors mb-3">{news.titleUrdu || news.title}</h3>
+                      <p className="text-base text-gray-600 font-urdu leading-relaxed mb-4" dir="auto">{news.descriptionUrdu || news.description}</p>
+                      <div className="flex items-center gap-4 text-xs font-bold text-gray-400 uppercase tracking-wider">
                         <span>{format(new Date(news.date), 'MMMM dd, yyyy')}</span>
-                        {news.comments.length > 0 && <span className="flex items-center gap-1"><BellRing className="w-3 h-3"/> {news.comments.length} responses</span>}
+                        {news.comments.length > 0 && <span className="flex items-center gap-1.5"><BellRing className="w-4 h-4"/> {news.comments.length} responses</span>}
                       </div>
                     </div>
                   </motion.div>

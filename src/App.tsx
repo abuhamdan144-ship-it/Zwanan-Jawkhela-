@@ -16,6 +16,7 @@ import Voting from './pages/Voting';
 import News from './pages/News';
 import Events from './pages/Events';
 import Dashboard from './pages/Dashboard';
+import DemoOne from './pages/Demo';
 
 export default function App() {
   return (
@@ -32,6 +33,7 @@ export default function App() {
             <Route path="news" element={<News />} />
             <Route path="events" element={<Events />} />
             <Route path="admin" element={<Dashboard />} />
+            <Route path="demo" element={<DemoOne />} />
           </Route>
         </Routes>
       </BrowserRouter>

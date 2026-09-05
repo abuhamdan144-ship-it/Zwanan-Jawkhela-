@@ -1,3 +1,4 @@
+import { Logo } from "../ui/LogoFallback";
 import React from 'react';
 
 export function Footer() {
@@ -8,7 +9,7 @@ export function Footer() {
           <div>
             <div className="flex items-center gap-2 mb-4">
               <div className="bg-white p-1 rounded-md inline-block">
-                <img src="/IMG_0313.jpeg" alt="Zwanan Jawkhela Logo" className="h-8 w-auto object-contain" />
+                <Logo src="/IMG_0342.jpeg" alt="Zwanan Jawkhela Logo" className="h-8 w-auto object-contain" />
               </div>
               <h3 className="text-white text-lg font-bold font-urdu">Zwanan Jawkhela</h3>
             </div>

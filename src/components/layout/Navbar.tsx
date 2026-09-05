@@ -1,3 +1,4 @@
+import { Logo } from "../ui/LogoFallback";
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -48,15 +49,15 @@ export function Navbar() {
     <nav className={cn(
       "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
       isHome && !scrolled
-        ? "bg-transparent border-transparent py-2"
-        : "bg-primary-950/95 backdrop-blur-md border-b border-white/10 shadow-lg py-0"
+        ? "bg-transparent border-transparent py-3"
+        : "bg-primary-950/95 backdrop-blur-md shadow-lg py-1 border-b border-white/10"
     )}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center gap-2">
               <div className="bg-white p-1 rounded-md shadow-sm">
-                <img src="/IMG_0313.jpeg" alt="Zwanan Jawkhela Logo" className="h-8 w-auto object-contain" />
+                <Logo src="/IMG_0342.JPG" alt="Zwanan Jawkhela Logo" className="h-8 w-auto object-contain" />
               </div>
               <span className="text-2xl font-bold font-urdu tracking-wide text-white">Zwanan Jawkhela</span>
             </Link>
@@ -74,7 +75,7 @@ export function Navbar() {
                   className={cn(
                     "flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-semibold transition-all",
                     isActive 
-                      ? "bg-white/20 text-white" 
+                      ? "text-accent-500 bg-white/10" 
                       : "text-white/80 hover:bg-white/10 hover:text-white"
                   )}
                 >
@@ -92,7 +93,7 @@ export function Navbar() {
             ) : null}
 
             {user ? (
-              <button onClick={logout} className="ml-4 px-4 py-2 bg-white/10 rounded-lg text-sm font-semibold hover:bg-white/20 text-white transition-colors">
+              <button onClick={logout} className="ml-4 px-4 py-2 bg-white/10 rounded-lg text-sm font-semibold hover:text-accent-500 bg-white/10 transition-colors">
                 Logout
               </button>
             ) : (
@@ -130,16 +131,39 @@ export function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: 'auto', opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            className="md:hidden overflow-hidden bg-primary-950/95 backdrop-blur-md border-t border-white/10 shadow-xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsOpen(false)}
+            className="fixed inset-0 bg-primary-950/40 backdrop-blur-sm z-40 md:hidden"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Menu Panel */}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ x: '100%' }}
+            animate={{ x: 0 }}
+            exit={{ x: '100%' }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed inset-y-0 right-0 w-4/5 max-w-sm bg-primary-950 shadow-2xl z-50 flex flex-col border-l border-white/10 md:hidden overflow-y-auto"
           >
-            <div className="px-2 pt-2 pb-4 space-y-1 sm:px-3">
+            <div className="flex items-center justify-between px-4 h-20 border-b border-white/10">
+              <span className="text-xl font-bold font-urdu text-white">Menu</span>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-2 rounded-md text-white/70 hover:text-white hover:bg-white/10"
+              >
+                <X className="h-6 w-6" />
+              </button>
+            </div>
+            <div className="px-4 py-6 space-y-2 flex-grow">
               {visibleLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive = location.pathname === link.path;
@@ -149,8 +173,8 @@ export function Navbar() {
                     to={link.path}
                     onClick={() => setIsOpen(false)}
                     className={cn(
-                      "flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold transition-colors",
-                      isActive ? "bg-white/10 text-white" : "text-white/80 hover:bg-white/5 hover:text-white"
+                      "flex items-center gap-4 px-4 py-3.5 rounded-xl text-base font-semibold transition-colors",
+                      isActive ? "bg-white/10 text-accent-400" : "text-white/80 hover:bg-white/5 hover:text-white"
                     )}
                   >
                     <Icon className="w-5 h-5" />
@@ -163,35 +187,35 @@ export function Navbar() {
                 <Link 
                   to="/admin" 
                   onClick={() => setIsOpen(false)}
-                  className="flex items-center gap-3 px-4 py-3 rounded-xl text-base font-semibold text-amber-400 hover:bg-white/5"
+                  className="flex items-center gap-4 px-4 py-3.5 rounded-xl text-base font-semibold text-accent-400 hover:bg-white/5 mt-4"
                 >
                   <Settings className="w-5 h-5" />
                   Admin Dashboard
                 </Link>
               ) : null}
 
-              <div className="pt-4 pb-2 border-t border-white/10 mt-2">
+              <div className="pt-6 mt-6 border-t border-white/10">
                 {user ? (
-                  <button onClick={() => { logout(); setIsOpen(false); }} className="w-full text-left px-4 py-3 rounded-xl text-base font-semibold text-red-400 hover:bg-white/5">
+                  <button onClick={() => { logout(); setIsOpen(false); }} className="w-full text-left px-4 py-3.5 rounded-xl text-base font-semibold text-red-400 hover:bg-white/5">
                     Logout ({user.name})
                   </button>
                 ) : (
-                  <form onSubmit={handleLogin} className="px-3 flex flex-col gap-3">
+                  <form onSubmit={handleLogin} className="flex flex-col gap-3">
                     <input 
                       type="text" 
                       placeholder="Username..." 
                       value={loginCnic}
                       onChange={e => setLoginCnic(e.target.value)}
-                      className="px-4 py-3 text-sm text-gray-900 bg-white rounded-xl outline-none w-full font-medium"
+                      className="px-4 py-3.5 text-base text-gray-900 bg-white rounded-xl outline-none w-full font-medium shadow-inner"
                     />
                     <input
                       type="password"
                       placeholder="Password"
                       value={loginPassword}
                       onChange={e => setLoginPassword(e.target.value)}
-                      className="px-4 py-3 text-sm text-gray-900 bg-white rounded-xl outline-none w-full font-medium"
+                      className="px-4 py-3.5 text-base text-gray-900 bg-white rounded-xl outline-none w-full font-medium shadow-inner"
                     />
-                    <button type="submit" className="w-full px-4 py-3 bg-primary-600 rounded-xl text-sm text-white font-bold hover:bg-primary-500 transition-colors">
+                    <button type="submit" className="w-full px-4 py-3.5 bg-primary-600 rounded-xl text-base text-white font-bold hover:bg-primary-500 transition-colors shadow-md mt-2">
                       Login
                     </button>
                   </form>

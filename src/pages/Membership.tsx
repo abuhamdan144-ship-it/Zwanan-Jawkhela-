@@ -1,3 +1,4 @@
+import { Logo } from "../components/ui/LogoFallback";
 import React, { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
@@ -6,7 +7,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { jsPDF } from 'jspdf';
 import { firebaseApp, db } from '../firebase';
 import { collection, setDoc, doc, onSnapshot, query, where } from 'firebase/firestore';
-import { getAuth, createUserWithEmailAndPassword } from 'firebase/auth';
+import { getAuth, createUserWithEmailAndPassword, deleteUser } from 'firebase/auth';
 
 function downloadCardImage(user: NonNullable<ReturnType<typeof useAuth>['user']>) {
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="900" height="560" viewBox="0 0 900 560"><rect width="900" height="560" rx="32" fill="#052e16"/><rect x="28" y="28" width="844" height="504" rx="22" fill="#0f5132" stroke="#eab308" stroke-width="3"/><text x="70" y="100" fill="#facc15" font-family="Arial" font-size="34" font-weight="700">ZWANAN JAWKHELA</text><text x="70" y="135" fill="#dcfce7" font-family="Arial" font-size="18">OFFICIAL MEMBERSHIP CARD</text><circle cx="130" cy="285" r="72" fill="#dcfce7"/><text x="130" y="300" text-anchor="middle" fill="#166534" font-family="Arial" font-size="58" font-weight="700">${user.name.charAt(0)}</text><text x="245" y="260" fill="#ffffff" font-family="Arial" font-size="30" font-weight="700">${user.name}</text><text x="245" y="295" fill="#bbf7d0" font-family="Arial" font-size="18">Member ID: ${user.id}</text><text x="245" y="330" fill="#bbf7d0" font-family="Arial" font-size="18">Blood Group: ${user.bloodGroup}</text><text x="70" y="465" fill="#bbf7d0" font-family="Arial" font-size="18">Valid until: ${user.validUntil || 'Active'}</text><text x="650" y="465" fill="#facc15" font-family="Arial" font-size="18">JAWKHELA · BUNER</text></svg>`;
@@ -54,7 +55,12 @@ export default function Membership() {
       if (!cleanCnic) throw new Error("Please enter a valid CNIC numbers only.");
       const email = `${cleanCnic}@zwananjawkhela.com`;
       
-      const userCredential = await createUserWithEmailAndPassword(auth, email, regData.password);
+      let userCredential;
+      try {
+        userCredential = await createUserWithEmailAndPassword(auth, email, regData.password);
+      } catch (authError: any) {
+        throw new Error(authError.message);
+      }
       
       const memberData = {
         name: regData.name,
@@ -68,7 +74,18 @@ export default function Membership() {
         createdAt: new Date().toISOString()
       };
       
-      await setDoc(doc(db, 'members', userCredential.user.uid), memberData);
+      try {
+        await setDoc(doc(db, 'members', userCredential.user.uid), memberData);
+      } catch (dbError: any) {
+        // If database write fails (e.g. missing permissions), clean up the auth user to prevent orphan accounts
+        if (userCredential && userCredential.user) {
+          await deleteUser(userCredential.user);
+        }
+        if (dbError.code === 'permission-denied') {
+          throw new Error("Firestore Rules are blocking writes. Please update your Firebase Security Rules.");
+        }
+        throw new Error(dbError.message);
+      }
 
       setRegMessage({ type: 'success', text: 'Registration successful! Your application is pending admin approval.' });
       setRegData({ name: '', fatherName: '', cnic: '', phone: '', address: '', bloodGroup: 'A+', password: '' });
@@ -84,7 +101,7 @@ export default function Membership() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div className="mb-8 border-b border-gray-200">
         <nav className="-mb-px flex space-x-8">
           <button
@@ -93,7 +110,7 @@ export default function Membership() {
           >
             Registration
           </button>
-          {user && (
+          {user && (user.role === 'admin' || user.role === 'superadmin') && (
             <button
               onClick={() => setActiveTab('directory')}
               className={`${activeTab === 'directory' ? 'border-primary-500 text-primary-600' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'} whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm`}
@@ -169,7 +186,7 @@ export default function Membership() {
         </motion.div>
       )}
 
-      {activeTab === 'directory' && user && (
+      {activeTab === 'directory' && user && (user.role === 'admin' || user.role === 'superadmin') && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
           <div className="flex justify-between items-center bg-white p-4 rounded-lg shadow-sm border border-gray-100">
             <div className="relative w-full max-w-md">
@@ -220,8 +237,8 @@ export default function Membership() {
           <div className="bg-white w-[350px] rounded-xl overflow-hidden shadow-2xl border border-gray-200">
             <div className="bg-primary-900 text-white p-4 text-center relative">
               <div className="flex justify-center mb-3">
-                <div className="bg-white p-1.5 rounded-lg shadow-sm">
-                  <img src="/IMG_0313.jpeg" alt="Logo" className="h-10 w-auto object-contain" />
+                <div className="bg-white p-1 rounded-lg shadow-sm">
+                  <Logo src="/IMG_0342.jpeg" alt="Logo" className="h-10 w-10 object-contain" />
                 </div>
               </div>
               <h3 className="font-bold font-urdu text-xl tracking-wider">Zwanan Jawkhela</h3>

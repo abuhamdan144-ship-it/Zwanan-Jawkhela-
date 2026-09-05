@@ -8,7 +8,7 @@ export default function Donations() {
   const totalCollected = mockDonations.reduce((sum, d) => sum + d.amount, 0);
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left Column: How to Donate & Stats */}

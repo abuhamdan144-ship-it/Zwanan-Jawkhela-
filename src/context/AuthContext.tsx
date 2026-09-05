@@ -42,9 +42,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             } else {
               setUser({ id: firebaseUser.uid, name: 'Pending User', fatherName: '', cnic: firebaseUser.email?.split('@')[0] || '', phone: '', address: '', bloodGroup: 'O+', status: 'pending', role: 'member' });
             }
-          } catch (error) {
+          } catch (error: any) {
             console.error("Error fetching user data:", error);
-            setUser(null);
+            if (error.code === 'permission-denied') {
+              alert("Firebase Permissions Error: Please update your Firestore Security Rules to allow access.");
+            }
+            // Allow them to exist as a default user so they aren't completely blocked
+            setUser({ id: firebaseUser.uid, name: 'Restricted User', fatherName: '', cnic: firebaseUser.email?.split('@')[0] || '', phone: '', address: '', bloodGroup: 'O+', status: 'pending', role: 'member' });
           }
         }
       } else {

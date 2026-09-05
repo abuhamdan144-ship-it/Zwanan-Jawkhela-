@@ -10,9 +10,9 @@ export default function Cabinet() {
   });
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div className="text-center mb-16">
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Cabinet Members</h1>
+        <h1 className="text-4xl font-bold text-gray-900 font-serif mb-4">Cabinet Members</h1>
         <p className="text-gray-500 max-w-2xl mx-auto">
           The elected representatives responsible for managing the affairs, funds, and initiatives of Zwanan Jawkhela.
         </p>
@@ -25,7 +25,7 @@ export default function Cabinet() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
             key={member.id} 
-            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden text-center hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group"
+            className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden text-center hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 group"
           >
             <div className="h-32 bg-primary-950 relative overflow-hidden">
               {/* Background pattern */}

@@ -8,8 +8,8 @@ export default function Events() {
   const pastEvents = mockEvents.filter(e => isPast(new Date(e.date)));
 
   return (
-    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-      <h1 className="text-3xl font-bold text-gray-900 mb-8">Community Events</h1>
+    <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+      <h1 className="text-4xl font-bold text-gray-900 font-serif mb-8">Community Events</h1>
       
       <section className="mb-12">
         <h2 className="text-xl font-bold text-gray-900 mb-6 border-b pb-2">Upcoming Events</h2>
@@ -18,7 +18,7 @@ export default function Events() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {upcomingEvents.map(event => (
-              <div key={event.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 cursor-pointer">
+              <div key={event.id} className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300 cursor-pointer">
                 <div className="flex gap-4 items-start">
                   <div className="bg-primary-50 rounded-xl p-3 text-center min-w-[75px] shadow-sm">
                     <p className="text-primary-600 font-bold text-sm uppercase">{format(new Date(event.date), 'MMM')}</p>

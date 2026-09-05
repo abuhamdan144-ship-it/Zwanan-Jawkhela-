@@ -17,12 +17,12 @@ export default function BloodBank() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
       <div className="text-center mb-12">
         <div className="inline-flex items-center justify-center p-4 bg-red-50 text-red-600 rounded-full mb-4">
           <Droplet className="w-8 h-8" />
         </div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">Blood Donor Directory</h1>
+        <h1 className="text-4xl font-bold text-gray-900 font-serif mb-4">Blood Donor Directory</h1>
         <p className="text-gray-500 max-w-2xl mx-auto">
           In case of emergency, contact the available donors below. The Zwanan Jawkhela blood bank network is maintained by community volunteers.
         </p>
@@ -64,7 +64,7 @@ export default function BloodBank() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: idx * 0.05 }}
             key={donor.id} 
-            className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-xl hover:-translate-y-1 transition-all duration-300"
+            className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col h-full hover:shadow-lg hover:-translate-y-1.5 transition-all duration-300"
           >
             <div className="flex justify-between items-start mb-4">
               <div>
@@ -96,7 +96,7 @@ export default function BloodBank() {
       </div>
       
       {donors.length === 0 && (
-        <div className="text-center py-12 text-gray-500">
+        <div className="text-center py-20 text-gray-500">
           No available donors found matching your criteria.
         </div>
       )}
