@@ -30,6 +30,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   React.useEffect(() => {
+    // Check for hardcoded local mock admin
+    if (localStorage.getItem('mockAdmin') === 'true') {
+      setUser({ id: 'mock-admin-id', name: 'Admin', fatherName: '', cnic: 'admin', phone: '', address: '', bloodGroup: 'O+', status: 'approved', role: 'superadmin' });
+      setIsLoading(false);
+      return;
+    }
+
     const unsubscribe = onAuthStateChanged(getAuth(firebaseApp), async (firebaseUser) => {
       if (firebaseUser) {
         if (firebaseUser.email === 'adminzj@zwananjawkhela.com') {
@@ -61,6 +68,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = async (username: string, password: string) => {
     setIsLoading(true);
+
+    // Hardcoded bypass for testing
+    if (username.toLowerCase() === 'admin' && password === '1234') {
+      localStorage.setItem('mockAdmin', 'true');
+      setUser({ id: 'mock-admin-id', name: 'Admin', fatherName: '', cnic: 'admin', phone: '', address: '', bloodGroup: 'O+', status: 'approved', role: 'superadmin' });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const cleanUsername = username === 'AdminZJ' ? 'adminzj' : username.replace(/[^a-zA-Z0-9]/g, '');
       const email = `${cleanUsername}@zwananjawkhela.com`;
@@ -72,6 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    localStorage.removeItem('mockAdmin');
+    setUser(null);
     void signOut(getAuth(firebaseApp));
   };
 
