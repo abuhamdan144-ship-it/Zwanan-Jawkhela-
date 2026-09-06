@@ -2241,7 +2241,7 @@ function downloadCardPNG(m) {
 function MembershipPage({ db, set, isAdmin }) {
   const ref = useReveal();
   const [flipped, setFlipped] = useState(false);
-  const [application, setApplication] = useState({ name: '', fatherName: '', cnic: '', phone: '', address: '', blood: 'A+', email: '' });
+  const [application, setApplication] = useState({ name: '', fatherName: '', cnic: '', phone: '', address: '', blood: 'A+', email: '', photo: '' });
   const m = db.member;
   const applications = Array.isArray(db.memberApplications) ? db.memberApplications : [];
   
@@ -2285,7 +2285,7 @@ function MembershipPage({ db, set, isAdmin }) {
     }
     const record = Object.assign({}, application, { id: uid('app'), appliedAt: iso(new Date()), status: 'pending', approved: false });
     set((d) => Object.assign({}, d, { memberApplications: [record].concat(Array.isArray(d.memberApplications) ? d.memberApplications : []) }));
-    setApplication({ name: '', fatherName: '', cnic: '', phone: '', address: '', blood: 'A+', email: '' });
+    setApplication({ name: '', fatherName: '', cnic: '', phone: '', address: '', blood: 'A+', email: '', photo: '' });
     toast('Membership application saved — waiting for admin approval');
   };
 
@@ -2302,6 +2302,24 @@ function MembershipPage({ db, set, isAdmin }) {
           <Field label="Email"><input type="email" value={application.email} onChange={(e) => setApplication(Object.assign({}, application, { email: e.target.value }))} placeholder="Optional email" /></Field>
           <Field label="Blood group"><select value={application.blood} onChange={(e) => setApplication(Object.assign({}, application, { blood: e.target.value }))}>{GROUPS.map((g) => <option key={g}>{g}</option>)}</select></Field>
           <Field label="Address in Jawkhela" required className="sm:col-span-2"><input required value={application.address} onChange={(e) => setApplication(Object.assign({}, application, { address: e.target.value }))} placeholder="Village, street or neighbourhood" /></Field>
+          <Field label="Photo (Upload Image)" className="sm:col-span-2">
+            <div className="flex items-center gap-3">
+              <Avatar name={application.name} photo={application.photo} size={54} />
+              <div className="flex gap-2 flex-1">
+                <label className="btn btn-ghost btn-sm flex-1 cursor-pointer">
+                  <Icon n="upload" /> Upload
+                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                    const f = e.target.files && e.target.files[0];
+                    if (!f) return;
+                    const url = await fileToDataURL(f, 420);
+                    if (url) { setApplication(Object.assign({}, application, { photo: url })); toast('Photo updated'); }
+                    e.target.value = '';
+                  }} />
+                </label>
+                {application.photo ? <button type="button" className="btn btn-ghost btn-sm" onClick={() => setApplication(Object.assign({}, application, { photo: '' }))} aria-label="Remove photo"><Icon n="trash" /></button> : null}
+              </div>
+            </div>
+          </Field>
         </div>
         <button type="submit" className="btn btn-gold mt-5"><Icon n="paper-plane" /> Save application for approval</button>
         {applications.filter((item) => item.cnic === application.cnic && item.status === 'pending').length > 0 ? <p className="muted text-xs mt-3">A pending application already exists for this CNIC.</p> : null}
@@ -2471,6 +2489,7 @@ function MembershipPage({ db, set, isAdmin }) {
    ========================================================================= */
 const ADMIN_TABS = [
   { id: 'dash', label: 'Dashboard', icon: 'gauge-high' },
+  { id: 'members', label: 'Members', icon: 'users' },
   { id: 'cabinet', label: 'Cabinet', icon: 'users-gear' },
   { id: 'complaints', label: 'Complaints', icon: 'inbox' },
   { id: 'meetings', label: 'Meeting Summaries', icon: 'clipboard-list' },
@@ -2495,7 +2514,8 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
   const income = db.transactions.filter((t) => t.type === 'Income').reduce((a, b) => a + Number(b.amount), 0);
   const expense = db.transactions.filter((t) => t.type === 'Expense').reduce((a, b) => a + Number(b.amount), 0);
   const openComplaints = db.complaints.filter((c) => c.status !== 'Resolved').length;
-  const pendingApplications = (Array.isArray(db.memberApplications) ? db.memberApplications : []).filter((item) => item.status === 'pending');
+  const allApplications = Array.isArray(db.memberApplications) ? db.memberApplications : [];
+  const pendingApplications = allApplications.filter((item) => item.status === 'pending');
 
   const saveMember = () => {
     if (!mForm.name.trim() || !mForm.role.trim()) { toast('Name and role are required', 'err'); return; }
@@ -2617,6 +2637,26 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
                 datasets: [{ data: [income, expense], backgroundColor: ['rgba(52,211,153,.85)', 'rgba(248,113,113,.85)'], borderColor: 'transparent' }]
               }} options={{ cutout: '68%', plugins: { legend: { position: 'bottom' } } }} />
             </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'members' && (
+        <div className="space-y-4">
+          <SectionHead eyebrow="Community" title="All Members" sub="List of approved and registered members." />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {allApplications.filter(a => a.approved).map((item) => (
+              <div key={item.id} className="card p-4 flex gap-3 items-center reveal">
+                <Avatar name={item.name} photo={item.photo} size={54} />
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold truncate">{item.name}</p>
+                  <p className="muted text-[.68rem] truncate">CNIC: {item.cnic}</p>
+                  <p className="muted text-[.68rem] truncate">Phone: {item.phone}</p>
+                  <span className="chip chip-gold mt-2 inline-flex"><Icon n="id-badge" /> ID: {item.id.split('-')[1] || item.id}</span>
+                </div>
+              </div>
+            ))}
+            {allApplications.filter(a => a.approved).length === 0 && <div className="card p-10 col-span-full text-center muted text-sm">No approved members yet. Go to Dashboard to approve pending applications.</div>}
           </div>
         </div>
       )}
