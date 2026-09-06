@@ -2185,6 +2185,13 @@ function DigitalMemberCard({ m, flipped, setFlipped }) {
   const exportCard = async (format, share = false, e) => {
     e.stopPropagation();
     if (!m.approved) return toast('Card pending approval', 'err');
+    
+    if (share === 'whatsapp-link') {
+      const text = `*Zwanan Jawkhela Membership*\nName: ${m.name}\nMember ID: ${m.id}\nBlood Group: ${m.blood}\nContact: ${m.phone}`;
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+      return;
+    }
+
     toast(share ? 'Preparing card...' : 'Generating ' + format.toUpperCase() + '...');
     try {
       const el = frontRef.current;
@@ -2313,14 +2320,17 @@ function DigitalMemberCard({ m, flipped, setFlipped }) {
             <div className="h-9 rounded mb-3" style={{ background: 'repeating-linear-gradient(90deg,#e9eefb 0 3px,transparent 3px 6px)' }} />
             {m.approved ? (
             <div className="grid grid-cols-2 gap-2">
+              <button className="btn bg-green-600 text-white hover:bg-green-700 btn-sm w-full col-span-2" onClick={(e) => exportCard('jpg', true, e)}>
+                <Icon n="share-nodes" /> Share Card (Image)
+              </button>
+              <button className="btn bg-[#25D366] text-white hover:bg-[#1DA851] btn-sm w-full col-span-2" onClick={(e) => exportCard('text', 'whatsapp-link', e)}>
+                <i className="fa-brands fa-whatsapp mr-1 text-base"></i> Send WhatsApp Message
+              </button>
               <button className="btn btn-gold btn-sm w-full" onClick={(e) => exportCard('png', false, e)}>
                 <Icon n="download" /> PNG
               </button>
               <button className="btn btn-gold btn-sm w-full" onClick={(e) => exportCard('pdf', false, e)}>
                 <Icon n="file-pdf" /> PDF
-              </button>
-              <button className="btn bg-green-600 text-white hover:bg-green-700 btn-sm w-full col-span-2" onClick={(e) => exportCard('jpg', true, e)}>
-                <Icon n="share-nodes" /> Share (WhatsApp / Email)
               </button>
             </div>
             ) : (
@@ -2778,6 +2788,16 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
               <Field label="Donation goal (PKR)"><input type="number" value={db.settings.donationGoal} onChange={(e) => set((d) => Object.assign({}, d, { settings: Object.assign({}, d.settings, { donationGoal: Number(e.target.value) }) }))} /></Field>
             </div>
           </div>
+          
+          <div className="card p-5 reveal">
+            <h3 className="font-extrabold mb-4">Anti-Narcotics Message (Urdu)</h3>
+            <div className="space-y-4" dir="rtl">
+              <Field label="پیغام (Message)">
+                <textarea rows="8" style={{ fontFamily: 'var(--font-urdu, "Noto Nastaliq Urdu", serif)' }} className="text-right text-lg p-3" value={db.settings.narcoticsMessage || `پیارے بھائیوں اور بہنو!\n\nآج کا نوجوان کل کا مستقبل ہے۔ منشیات کا استعمال نہ صرف آپ کی صحت کو تباہ کرتا ہے بلکہ آپ کے خاندان، دوستوں اور پوری کمیونٹی کو نقصان پہنچاتا ہے۔\n\nہم سب کا فرض ہے کہ ایک دوسرے کو اس برائی سے روکیں۔\n\nاگر آپ یا آپ کا کوئی عزیز منشیات کا شکار ہے تو بلا جھجک کابینہ کے کسی رکن سے رابطہ کریں – ہم آپ کی مدد کے لیے حاضر ہیں۔\n\nیاد رکھیں: ایک صحت مند معاشرہ ہی ترقی کی ضمانت ہے۔`} onChange={(e) => set((d) => Object.assign({}, d, { settings: Object.assign({}, d.settings, { narcoticsMessage: e.target.value }) }))} />
+              </Field>
+            </div>
+          </div>
+
           <div className="space-y-4">
             <div className="card p-5 reveal">
               <h3 className="font-extrabold mb-4">Appearance</h3>
@@ -2904,8 +2924,10 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
 /* =========================================================================
    APP SHELL
    ========================================================================= */
-function NarcoticsPage({ go }) {
+function NarcoticsPage({ db, go }) {
   const ref = useReveal();
+  const msg = db.settings?.narcoticsMessage || `پیارے بھائیوں اور بہنو!\n\nآج کا نوجوان کل کا مستقبل ہے۔ منشیات کا استعمال نہ صرف آپ کی صحت کو تباہ کرتا ہے بلکہ آپ کے خاندان، دوستوں اور پوری کمیونٹی کو نقصان پہنچاتا ہے۔\n\nہم سب کا فرض ہے کہ ایک دوسرے کو اس برائی سے روکیں۔\n\nاگر آپ یا آپ کا کوئی عزیز منشیات کا شکار ہے تو بلا جھجک کابینہ کے کسی رکن سے رابطہ کریں – ہم آپ کی مدد کے لیے حاضر ہیں۔\n\nیاد رکھیں: ایک صحت مند معاشرہ ہی ترقی کی ضمانت ہے۔`;
+
   return (
     <div ref={ref} className="max-w-3xl mx-auto reveal">
       <SectionHead eyebrow="Awareness" title="نوجوانوں کے لیے پیغام" sub="منشیات کی لعنت سے بچیں" />
@@ -2921,21 +2943,20 @@ function NarcoticsPage({ go }) {
         <h2 className="text-2xl sm:text-3xl font-bold mb-6 text-red-600 dark:text-red-400 leading-normal">
           نوجوانوں کے لیے پیغام – منشیات کی لعنت سے بچیں
         </h2>
-        <div className="space-y-4 text-base sm:text-lg leading-loose text-gray-800 dark:text-gray-200 relative z-10">
-          <p>پیارے بھائیوں اور بہنو!</p>
-          <p>آج کا نوجوان کل کا مستقبل ہے۔ منشیات کا استعمال نہ صرف آپ کی صحت کو تباہ کرتا ہے بلکہ آپ کے خاندان، دوستوں اور پوری کمیونٹی کو نقصان پہنچاتا ہے۔</p>
-          <div className="p-4 sm:p-6 rounded-xl bg-[var(--card2)] border border-[var(--line2)] text-center my-6 shadow-inner">
-            <p className="font-bold text-xl text-gold drop-shadow-md mb-2">
-              "وَلا تُلْقُوا بِأَيْدِيكُمْ إِلَى التَّهْلُكَةِ"
-            </p>
-            <p className="text-sm font-normal muted">
-              (اور اپنے آپ کو ہلاکت میں نہ ڈالیں) - القرآن
-            </p>
-          </div>
-          <p>ہم سب کا فرض ہے کہ ایک دوسرے کو اس برائی سے روکیں۔</p>
-          <p>اگر آپ یا آپ کا کوئی عزیز منشیات کا شکار ہے تو بلا جھجک کابینہ کے کسی رکن سے رابطہ کریں – ہم آپ کی مدد کے لیے حاضر ہیں۔</p>
-          <p className="font-extrabold text-gold text-xl sm:text-2xl mt-6 drop-shadow-sm">یاد رکھیں: ایک صحت مند معاشرہ ہی ترقی کی ضمانت ہے۔</p>
+        
+        <div className="p-4 sm:p-6 rounded-xl bg-[var(--card2)] border border-[var(--line2)] text-center mb-6 shadow-inner relative z-10">
+          <p className="font-bold text-xl text-gold drop-shadow-md mb-2">
+            "وَلا تُلْقُوا بِأَيْدِيكُمْ إِلَى التَّهْلُكَةِ"
+          </p>
+          <p className="text-sm font-normal muted">
+            (اور اپنے آپ کو ہلاکت میں نہ ڈالیں) - القرآن
+          </p>
         </div>
+
+        <div className="space-y-4 text-base sm:text-lg leading-loose text-gray-800 dark:text-gray-200 relative z-10 whitespace-pre-wrap font-medium">
+          {msg}
+        </div>
+
         <div className="mt-10 flex justify-center sm:justify-start relative z-10">
           <button className="btn btn-red text-lg px-8 py-3 shadow-lg hover:shadow-red-500/50" onClick={() => go('admin')}>
             <Icon n="phone" /> Cabinet سے رابطہ کریں
