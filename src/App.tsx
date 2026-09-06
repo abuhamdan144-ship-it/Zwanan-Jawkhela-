@@ -2501,10 +2501,10 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
         <Icon n="lock" className="text-4xl gold-text mb-4" />
         <h2 className="text-xl font-extrabold mb-4">Admin Login</h2>
         <div className="space-y-4 text-left">
-           <Field label="Username"><input placeholder="Adminzj" value={adminUser} onChange={e=>setAdminUser(e.target.value)} /></Field>
+           <Field label="Username"><input placeholder="Admin@zj.com" value={adminUser} onChange={e=>setAdminUser(e.target.value)} /></Field>
            <Field label="Password"><input type="password" placeholder="••••" value={adminPwd} onChange={e=>setAdminPwd(e.target.value)} /></Field>
            <button className="btn btn-gold w-full" onClick={() => {
-              if (adminUser.toLowerCase() === 'adminzj' && adminPwd === '1234') { setAdmin(true); } else { toast('Invalid credentials', 'err'); }
+              if (adminUser.toLowerCase() === 'admin@zj.com' && adminPwd === '123456') { setAdmin(true); } else { toast('Invalid credentials', 'err'); }
            }}>Login</button>
         </div>
       </div>
