@@ -271,6 +271,7 @@ function seedData() {
       name: 'Sheikh Hamdan Khan', id: 'ZJ-2026-001', joined: '2019-03-01',
       blood: 'A+', phone: '0300-1234567', photo: '', tier: 'Lifetime Patron', approved: true
     },
+    memberApplications: [],
     settings: { siteName: 'Zwanan Jawkhela', tagline: 'Together We Thrive', dark: true, donationGoal: 500000, account: 'Aziz Ul Haq', accountNumber: '03429395868' }
   };
 }
@@ -2240,7 +2241,9 @@ function downloadCardPNG(m) {
 function MembershipPage({ db, set, isAdmin }) {
   const ref = useReveal();
   const [flipped, setFlipped] = useState(false);
+  const [application, setApplication] = useState({ name: '', fatherName: '', cnic: '', phone: '', address: '', blood: 'A+', email: '' });
   const m = db.member;
+  const applications = Array.isArray(db.memberApplications) ? db.memberApplications : [];
   
   const dlCard = async (format) => {
     toast('Generating ' + format.toUpperCase() + '...');
@@ -2270,9 +2273,39 @@ function MembershipPage({ db, set, isAdmin }) {
   };
 
   const update = (patch) => set((d) => Object.assign({}, d, { member: Object.assign({}, d.member, patch) }));
+  const submitApplication = (event) => {
+    event.preventDefault();
+    if (!application.name.trim() || !application.cnic.trim() || !application.phone.trim() || !application.address.trim()) {
+      toast('Name, CNIC, phone and address are required', 'err');
+      return;
+    }
+    if (applications.some((item) => item.cnic === application.cnic.trim() && item.status === 'pending')) {
+      toast('A pending application already exists for this CNIC', 'err');
+      return;
+    }
+    const record = Object.assign({}, application, { id: uid('app'), appliedAt: iso(new Date()), status: 'pending', approved: false });
+    set((d) => Object.assign({}, d, { memberApplications: [record].concat(Array.isArray(d.memberApplications) ? d.memberApplications : []) }));
+    setApplication({ name: '', fatherName: '', cnic: '', phone: '', address: '', blood: 'A+', email: '' });
+    toast('Membership application saved — waiting for admin approval');
+  };
 
   return (
     <div ref={ref}>
+      <SectionHead eyebrow="Join the alliance" title="Membership registration"
+        sub="Submit your details once. Your application is saved securely and appears in the admin approval queue." />
+      <form onSubmit={submitApplication} className="card p-5 sm:p-6 mb-6 reveal">
+        <div className="grid sm:grid-cols-2 gap-4">
+          <Field label="Full name" required><input required value={application.name} onChange={(e) => setApplication(Object.assign({}, application, { name: e.target.value }))} placeholder="Your full name" /></Field>
+          <Field label="Father's name"><input value={application.fatherName} onChange={(e) => setApplication(Object.assign({}, application, { fatherName: e.target.value }))} placeholder="Father's name" /></Field>
+          <Field label="CNIC / ID number" required><input required value={application.cnic} onChange={(e) => setApplication(Object.assign({}, application, { cnic: e.target.value }))} placeholder="XXXXX-XXXXXXX-X" /></Field>
+          <Field label="Phone / WhatsApp" required><input required value={application.phone} onChange={(e) => setApplication(Object.assign({}, application, { phone: e.target.value }))} placeholder="03XX-XXXXXXX" /></Field>
+          <Field label="Email"><input type="email" value={application.email} onChange={(e) => setApplication(Object.assign({}, application, { email: e.target.value }))} placeholder="Optional email" /></Field>
+          <Field label="Blood group"><select value={application.blood} onChange={(e) => setApplication(Object.assign({}, application, { blood: e.target.value }))}>{GROUPS.map((g) => <option key={g}>{g}</option>)}</select></Field>
+          <Field label="Address in Jawkhela" required className="sm:col-span-2"><input required value={application.address} onChange={(e) => setApplication(Object.assign({}, application, { address: e.target.value }))} placeholder="Village, street or neighbourhood" /></Field>
+        </div>
+        <button type="submit" className="btn btn-gold mt-5"><Icon n="paper-plane" /> Save application for approval</button>
+        {applications.filter((item) => item.cnic === application.cnic && item.status === 'pending').length > 0 ? <p className="muted text-xs mt-3">A pending application already exists for this CNIC.</p> : null}
+      </form>
       <SectionHead eyebrow="Your Identity" title="Membership Card"
         sub="Hover or tap the card to flip it. Save it to keep on your phone or print."
         actions={
@@ -2449,6 +2482,7 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
   const income = db.transactions.filter((t) => t.type === 'Income').reduce((a, b) => a + Number(b.amount), 0);
   const expense = db.transactions.filter((t) => t.type === 'Expense').reduce((a, b) => a + Number(b.amount), 0);
   const openComplaints = db.complaints.filter((c) => c.status !== 'Resolved').length;
+  const pendingApplications = (Array.isArray(db.memberApplications) ? db.memberApplications : []).filter((item) => item.status === 'pending');
 
   const saveMember = () => {
     if (!mForm.name.trim() || !mForm.role.trim()) { toast('Name and role are required', 'err'); return; }
@@ -2528,6 +2562,17 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
                 <div className="muted text-[.65rem] font-bold uppercase tracking-[.14em] mt-1">{s.l}</div>
               </div>
             ))}
+          </div>
+
+          <div className="card p-5 reveal">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div><h3 className="font-extrabold">Membership approvals</h3><p className="muted text-xs mt-1">{pendingApplications.length} application{pendingApplications.length === 1 ? '' : 's'} waiting for review</p></div>
+              <span className="chip chip-gold"><Icon n="id-card" /> Pending queue</span>
+            </div>
+            {pendingApplications.length ? <div className="space-y-3">{pendingApplications.map((item) => <div key={item.id} className="card2 p-4 flex flex-col lg:flex-row lg:items-center gap-3">
+              <div className="min-w-0 flex-1"><p className="font-bold">{item.name}</p><p className="muted text-xs mt-1">CNIC: {item.cnic} • Phone: {item.phone} • Blood: {item.blood}</p><p className="muted text-xs mt-1">{item.address}</p></div>
+              <div className="flex gap-2 shrink-0"><button className="btn btn-sm btn-gold" onClick={() => { set((d) => Object.assign({}, d, { memberApplications: (d.memberApplications || []).map((x) => x.id === item.id ? Object.assign({}, x, { status: 'approved', approved: true, reviewedAt: iso(new Date()) }) : x), activity: [{ id: uid('a'), text: 'Membership approved — ' + item.name, at: iso(new Date()) }].concat(d.activity || []).slice(0, 40) })); toast('Membership approved'); }}><Icon n="check" /> Approve</button><button className="btn btn-sm btn-ghost" onClick={() => { set((d) => Object.assign({}, d, { memberApplications: (d.memberApplications || []).map((x) => x.id === item.id ? Object.assign({}, x, { status: 'rejected', approved: false, reviewedAt: iso(new Date()) }) : x) })); toast('Membership application rejected'); }}><Icon n="xmark" /> Reject</button></div>
+            </div>)}</div> : <div className="card2 p-5 text-center muted text-sm">No pending applications. New registrations will appear here automatically.</div>}
           </div>
 
           <div className="grid lg:grid-cols-3 gap-4">
