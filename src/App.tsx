@@ -2174,68 +2174,165 @@ function EmergencyPage({ db, set, isAdmin }) {
 /* =========================================================================
    MEMBERSHIP
    ========================================================================= */
-function downloadCardPNG(m) {
-  const W = 1016, H = 640;
-  const c = document.createElement('canvas');
-  c.width = W; c.height = H;
-  const g = c.getContext('2d');
-  const grad = g.createLinearGradient(0, 0, W, H);
-  grad.addColorStop(0, '#0a0e1a'); grad.addColorStop(.5, '#1a2a4a'); grad.addColorStop(1, '#0a0e1a');
-  g.fillStyle = grad; g.fillRect(0, 0, W, H);
-  g.strokeStyle = '#d4a843'; g.lineWidth = 5; g.strokeRect(16, 16, W - 32, H - 32);
-  g.save(); g.globalAlpha = .06; g.fillStyle = '#d4a843';
-  g.font = '900 300px Inter, Arial'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText('ZJ', W / 2, H / 2 + 10); g.restore();
-  // logo
-  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
-  const lg = g.createLinearGradient(56, 0, 320, 0);
-  lg.addColorStop(0, '#f5d77b'); lg.addColorStop(1, '#d4a843');
-  g.fillStyle = lg; g.font = '900 54px Inter, Arial'; g.fillText('ZWANAN', 56, 108);
-  g.fillStyle = '#ffffff'; g.font = '800 30px Inter, Arial'; g.fillText('JAWKHELA', 56, 144);
-  g.fillStyle = 'rgba(245,215,123,.8)'; g.font = '600 13px Inter, Arial';
-  g.fillText('C O M M U N I T Y   A L L I A N C E   &   O U T R E A C H   •   E S T . 2 0 1 9', 56, 170);
-  // member photo circle
-  g.save();
-  g.beginPath(); g.arc(150, 330, 78, 0, Math.PI * 2); g.closePath();
-  g.fillStyle = '#d4a843'; g.fill();
-  g.fillStyle = '#1a1206'; g.font = '900 62px Inter, Arial'; g.textAlign = 'center'; g.textBaseline = 'middle';
-  g.fillText(initials(m.name), 150, 336); g.restore();
-  // name
-  g.textAlign = 'left'; g.textBaseline = 'alphabetic';
-  g.fillStyle = '#ffffff'; g.font = '800 40px Inter, Arial'; g.fillText(m.name, 268, 312);
-  g.fillStyle = '#f5d77b'; g.font = '600 20px Inter, Arial'; g.fillText(m.tier || 'Member', 268, 348);
-  g.fillStyle = 'rgba(233,238,251,.7)'; g.font = '500 18px Inter, Arial';
-  g.fillText('Member ID: ' + m.id, 268, 382);
-  g.fillText('Joined: ' + fmtDate(m.joined), 268, 410);
-  g.fillText('Blood: ' + m.blood + '   |   ' + m.phone, 268, 438);
-  // footer band
-  g.fillStyle = 'rgba(212,168,67,.12)'; g.fillRect(16, H - 110, W - 32, 94);
-  g.fillStyle = '#f5d77b'; g.font = '700 20px Inter, Arial';
-  g.fillText('TOGETHER WE THRIVE', 56, H - 56);
-  g.fillStyle = 'rgba(233,238,251,.55)'; g.font = '500 13px Inter, Arial';
-  g.fillText('Gifted with Love from Sheikh Hamdan Khan & Sheikh Hashim Khan to Our Beloved Village Family', 56, H - 32);
-  // qr block
-  g.fillStyle = '#fff'; g.fillRect(W - 200, H - 250, 150, 150);
-  const cell = 6;
-  let hsh = 7; for (let i = 0; i < m.id.length; i++) hsh = (hsh * 31 + m.id.charCodeAt(i)) % 99991;
-  for (let y = 0; y < 25; y++) for (let x = 0; x < 25; x++) {
-    hsh = (hsh * 1103515245 + 12345) & 0x7fffffff;
-    const on = (hsh % 100) > 50;
-    const inFinder = (x < 8 && y < 8) || (x > 16 && y < 8) || (x < 8 && y > 16);
-    if (inFinder) continue;
-    if (on) { g.fillStyle = '#0a0e1a'; g.fillRect(W - 200 + x * cell, H - 250 + y * cell, cell, cell); }
-  }
-  g.fillStyle = '#0a0e1a';
-  const finder2 = (ox, oy) => {
-    g.fillStyle = '#0a0e1a'; g.fillRect(ox, oy, 7 * cell, 7 * cell);
-    g.fillStyle = '#fff'; g.fillRect(ox + cell, oy + cell, 5 * cell, 5 * cell);
-    g.fillStyle = '#0a0e1a'; g.fillRect(ox + 2 * cell, oy + 2 * cell, 3 * cell, 3 * cell);
-  };
-  finder2(W - 200, H - 250); finder2(W - 200 + 18 * cell, H - 250); finder2(W - 200, H - 250 + 18 * cell);
 
-  c.toBlob((blob) => {
-    if (blob) { downloadBlob(blob, m.id + '-membership-card.png', 'image/png'); toast('Membership card downloaded'); }
-  }, 'image/png');
+function DigitalMemberCard({ m, flipped, setFlipped }) {
+  const isInternalFlip = setFlipped === undefined;
+  const [internalFlipped, setInternalFlipped] = useState(false);
+  const _flipped = isInternalFlip ? internalFlipped : flipped;
+  const _setFlipped = isInternalFlip ? setInternalFlipped : setFlipped;
+  const frontRef = useRef(null);
+
+  const exportCard = async (format, share = false, e) => {
+    e.stopPropagation();
+    if (!m.approved) return toast('Card pending approval', 'err');
+    toast(share ? 'Preparing card...' : 'Generating ' + format.toUpperCase() + '...');
+    try {
+      const el = frontRef.current;
+      if (!el) return;
+      const canvas = await html2canvas(el, { scale: 3, useCORS: true, backgroundColor: '#0a0e1a' });
+      const filename = (m.id || 'ZJ-Card') + '.' + format;
+      
+      let fileData;
+      if (format === 'pdf') {
+        const imgData = canvas.toDataURL('image/jpeg', 0.95);
+        const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
+        pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
+        if (!share) pdf.save(filename);
+        else fileData = pdf.output('blob');
+      } else {
+        const type = format === 'jpg' ? 'image/jpeg' : 'image/png';
+        const imgData = canvas.toDataURL(type, 1.0);
+        if (!share) {
+          const link = document.createElement('a');
+          link.download = filename; link.href = imgData; link.click();
+        } else {
+          fileData = await (await fetch(imgData)).blob();
+        }
+      }
+
+      if (share && fileData) {
+        const file = new File([fileData], filename, { type: fileData.type });
+        if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Zwanan Jawkhela Membership', text: 'Here is my Zwanan Jawkhela Membership Card.' });
+          toast('Shared successfully', 'ok');
+        } else {
+          toast('Sharing not supported on this device. Downloading instead...', 'err');
+          if (format === 'pdf') {
+            const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
+            pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, canvas.width, canvas.height);
+            pdf.save(filename);
+          } else {
+            const link = document.createElement('a');
+            link.download = filename; link.href = canvas.toDataURL(format === 'jpg' ? 'image/jpeg' : 'image/png', 1.0); link.click();
+          }
+        }
+      } else if (!share) {
+        toast('Card downloaded');
+      }
+    } catch (e) {
+      toast('Error generating card', 'err');
+    }
+  };
+
+  return (
+    <div className={'flip w-full ' + (_flipped ? 'on' : '')} onMouseEnter={() => _setFlipped(true)} onMouseLeave={() => _setFlipped(false)}
+      onClick={() => _setFlipped((v) => !v)}>
+      <div className="flip-in" style={{ aspectRatio: '1.6 / 1' }}>
+        {/* FRONT */}
+        <div ref={frontRef} id="membership-card-front" className="flip-face card overflow-hidden relative h-full w-full p-5 sm:p-7 flex flex-col justify-between grain"
+          style={{ background: 'linear-gradient(135deg,#0a0e1a,#1a2a4a 55%,#0a0e1a)' }}>
+          <div className="absolute inset-0 opacity-[.07] pointer-events-none flex items-center justify-center">
+            <span className="text-[13rem] font-black">ZJ</span>
+          </div>
+          <div className="relative flex items-start justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <img src="/zwanan-jawkhela-3d-logo.png" alt="Zwanan Jawkhela — Together We Thrive" crossOrigin="anonymous" className="h-14 w-auto max-w-[220px] object-contain" />
+              <div>
+                <div className="text-2xl sm:text-3xl font-black leading-none"><span className="shimmer">ZWANAN</span></div>
+                <div className="text-sm sm:text-base font-extrabold tracking-[.28em]" style={{ color: '#fff' }}>JAWKHELA</div>
+                <div className="muted text-[.5rem] tracking-[.14em] font-semibold mt-1">COMMUNITY ALLIANCE &amp; OUTREACH • EST. 2019</div>
+              </div>
+            </div>
+            <span className="chip chip-gold"><Icon n="crown" /> {m.tier || 'Standard'}</span>
+          </div>
+          <div className="relative flex items-end gap-4 sm:gap-6">
+            <Avatar name={m.name} photo={m.photo} size={90} className="shadow-lg" />
+            <div className="min-w-0">
+              <p className="text-white font-extrabold text-lg sm:text-2xl leading-tight truncate">{m.name || 'Member Name'}</p>
+              <p className="gold-text font-bold text-xs sm:text-sm tracking-widest mt-1">{m.id || 'ZJ-XXXX'}</p>
+              <p className="muted text-[.68rem] mt-1">Joined {fmtDate(m.joined || m.appliedAt || iso(new Date()))}</p>
+            </div>
+            <div className="ml-auto text-right hidden sm:block">
+              <p className="muted text-[.58rem] font-bold uppercase tracking-[.16em]">Blood</p>
+              <p className="font-black text-xl" style={{ color: GROUP_COLORS[m.blood] || GOLD }}>{m.blood || 'O+'}</p>
+            </div>
+          </div>
+          <div className="relative pt-3" style={{ borderTop: '1px solid rgba(212,168,67,.28)' }}>
+            <p className="gold-text italic text-[.7rem] font-bold">“Together We Thrive”</p>
+          </div>
+        </div>
+        {/* BACK */}
+        <div className="flip-back flip-face card overflow-hidden h-full w-full p-5 sm:p-7 flex flex-col justify-between"
+          style={{ background: 'linear-gradient(135deg,#1a2a4a,#0a0e1a 60%)' }}>
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="h-8 rounded mb-4" style={{ background: 'linear-gradient(90deg,#d4a843,#24365e)' }} />
+              
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="muted text-[.55rem] font-bold uppercase tracking-[.16em]">Member</p>
+                  <p className="text-white font-bold text-sm truncate">{m.name || 'Member Name'}</p>
+                </div>
+                <div>
+                  <p className="muted text-[.55rem] font-bold uppercase tracking-[.16em]">Member ID</p>
+                  <p className="gold-text font-black text-sm truncate">{m.id || 'ZJ-XXXX'}</p>
+                </div>
+                <div>
+                  <p className="muted text-[.55rem] font-bold uppercase tracking-[.16em]">Contact</p>
+                  <p className="text-white text-xs font-semibold truncate">{m.phone || 'Phone Number'}</p>
+                </div>
+                {m.cnic && (
+                <div>
+                  <p className="muted text-[.55rem] font-bold uppercase tracking-[.16em]">CNIC</p>
+                  <p className="text-white text-xs font-semibold truncate">{m.cnic}</p>
+                </div>
+                )}
+                {m.address && (
+                <div className="col-span-2">
+                  <p className="muted text-[.55rem] font-bold uppercase tracking-[.16em]">Address</p>
+                  <p className="text-white text-xs font-semibold truncate">{m.address}</p>
+                </div>
+                )}
+              </div>
+            </div>
+            <div className="p-2 rounded-lg shrink-0" style={{ background: '#fff' }}>
+              <QRCode value={(m.id || 'ZJ-XXXX') + '|' + (m.name || '')} size={104} />
+            </div>
+          </div>
+          <div>
+            <div className="h-9 rounded mb-3" style={{ background: 'repeating-linear-gradient(90deg,#e9eefb 0 3px,transparent 3px 6px)' }} />
+            {m.approved ? (
+            <div className="grid grid-cols-2 gap-2">
+              <button className="btn btn-gold btn-sm w-full" onClick={(e) => exportCard('png', false, e)}>
+                <Icon n="download" /> PNG
+              </button>
+              <button className="btn btn-gold btn-sm w-full" onClick={(e) => exportCard('pdf', false, e)}>
+                <Icon n="file-pdf" /> PDF
+              </button>
+              <button className="btn bg-green-600 text-white hover:bg-green-700 btn-sm w-full col-span-2" onClick={(e) => exportCard('jpg', true, e)}>
+                <Icon n="share-nodes" /> Share (WhatsApp / Email)
+              </button>
+            </div>
+            ) : (
+            <button className="btn btn-gray w-full opacity-50 cursor-not-allowed" onClick={(e) => { e.stopPropagation(); toast("Pending Admin Approval", "err"); }}>
+              <Icon n="lock" /> Pending Approval
+            </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 function MembershipPage({ db, set, isAdmin }) {
@@ -2244,34 +2341,6 @@ function MembershipPage({ db, set, isAdmin }) {
   const [application, setApplication] = useState({ name: '', fatherName: '', cnic: '', phone: '', address: '', blood: 'A+', email: '', photo: '' });
   const m = db.member;
   const applications = Array.isArray(db.memberApplications) ? db.memberApplications : [];
-  
-  const dlCard = async (format) => {
-    toast('Generating ' + format.toUpperCase() + '...');
-    try {
-      const el = document.getElementById('membership-card-front');
-      if (!el) return;
-      const canvas = await html2canvas(el, { scale: 3, useCORS: true, backgroundColor: '#0a0e1a' });
-      const filename = m.id + '-membership-card.' + format;
-      
-      if (format === 'pdf') {
-        const imgData = canvas.toDataURL('image/jpeg', 0.95);
-        const pdf = new jsPDF({ orientation: 'landscape', unit: 'px', format: [canvas.width, canvas.height] });
-        pdf.addImage(imgData, 'JPEG', 0, 0, canvas.width, canvas.height);
-        pdf.save(filename);
-      } else {
-        const type = format === 'jpg' ? 'image/jpeg' : 'image/png';
-        const imgData = canvas.toDataURL(type, 1.0);
-        const link = document.createElement('a');
-        link.download = filename;
-        link.href = imgData;
-        link.click();
-      }
-      toast('Card downloaded');
-    } catch (e) {
-      toast('Error generating card', 'err');
-    }
-  };
-
   const update = (patch) => set((d) => Object.assign({}, d, { member: Object.assign({}, d.member, patch) }));
   const submitApplication = (event) => {
     event.preventDefault();
@@ -2325,159 +2394,22 @@ function MembershipPage({ db, set, isAdmin }) {
         {applications.filter((item) => item.cnic === application.cnic && item.status === 'pending').length > 0 ? <p className="muted text-xs mt-3">A pending application already exists for this CNIC.</p> : null}
       </form>
       <SectionHead eyebrow="Your Identity" title="Membership Card"
-        sub="Hover or tap the card to flip it. Save it to keep on your phone or print."
+        sub="Hover or tap the card to flip it and access download options."
         actions={
-          <div className="flex flex-wrap gap-2">
-            <button className="btn btn-ghost" onClick={() => setFlipped((v) => !v)}><Icon n="rotate" /> Flip card</button>
-            <div className="relative group">
-              {m.approved ? (<>
-                <button className="btn btn-gold"><Icon n="download" /> Save As...</button>
-                <div className="absolute right-0 top-full mt-2 w-32 bg-white dark:bg-navy-800 rounded-lg shadow-xl border border-[var(--line)] overflow-hidden hidden group-hover:block z-50">
-                  <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--line)]" onClick={() => dlCard("png")}>PNG Image</button>
-                  <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--line)]" onClick={() => dlCard("jpg")}>JPG Image</button>
-                  <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--line)]" onClick={() => dlCard("pdf")}>PDF Document</button>
-                </div>
-              </>) : (
-                <button className="btn btn-gray opacity-50 cursor-not-allowed" title="Waiting for Admin Approval" onClick={(e) => { e.preventDefault(); toast("Pending Admin Approval", "err"); }}><Icon n="lock" /> Pending Approval</button>
-              )}
-            </div>
-          </div>
+          <button className="btn btn-ghost" onClick={() => setFlipped((v) => !v)}>
+            <Icon n="rotate" /> Flip card
+          </button>
         } />
-
-      <div className="grid lg:grid-cols-3 gap-4">
-        <div className="lg:col-span-2 reveal">
-          <div className={'flip w-full ' + (flipped ? 'on' : '')} onMouseEnter={() => setFlipped(true)} onMouseLeave={() => setFlipped(false)}
-            onClick={() => setFlipped((v) => !v)}>
-            <div className="flip-in" style={{ aspectRatio: '1.6 / 1' }}>
-              {/* FRONT */}
-              <div id="membership-card-front" className="flip-face card overflow-hidden relative h-full w-full p-5 sm:p-7 flex flex-col justify-between grain"
-                style={{ background: 'linear-gradient(135deg,#0a0e1a,#1a2a4a 55%,#0a0e1a)' }}>
-                <div className="absolute inset-0 opacity-[.07] pointer-events-none flex items-center justify-center">
-                  <span className="text-[13rem] font-black">ZJ</span>
-                </div>
-                <div className="relative flex items-start justify-between gap-4">
-                  <div className="flex items-center gap-3">
-                    <img src="/zwanan-jawkhela-3d-logo.png" alt="Zwanan Jawkhela — Together We Thrive" crossOrigin="anonymous" className="h-14 w-auto max-w-[220px] object-contain" />
-                    <div>
-                      <div className="text-2xl sm:text-3xl font-black leading-none"><span className="shimmer">ZWANAN</span></div>
-                      <div className="text-sm sm:text-base font-extrabold tracking-[.28em]" style={{ color: '#fff' }}>JAWKHELA</div>
-                      <div className="muted text-[.5rem] tracking-[.14em] font-semibold mt-1">COMMUNITY ALLIANCE &amp; OUTREACH • EST. 2019</div>
-                    </div>
-                  </div>
-                  <span className="chip chip-gold"><Icon n="crown" /> {m.tier}</span>
-                </div>
-                <div className="relative flex items-end gap-4 sm:gap-6">
-                  <Avatar name={m.name} photo={m.photo} size={90} className="shadow-lg" />
-                  <div className="min-w-0">
-                    <p className="text-white font-extrabold text-lg sm:text-2xl leading-tight truncate">{m.name}</p>
-                    <p className="gold-text font-bold text-xs sm:text-sm tracking-widest mt-1">{m.id}</p>
-                    <p className="muted text-[.68rem] mt-1">Joined {fmtDate(m.joined)}</p>
-                  </div>
-                  <div className="ml-auto text-right hidden sm:block">
-                    <p className="muted text-[.58rem] font-bold uppercase tracking-[.16em]">Blood</p>
-                    <p className="font-black text-xl" style={{ color: GROUP_COLORS[m.blood] || GOLD }}>{m.blood}</p>
-                  </div>
-                </div>
-                <div className="relative pt-3" style={{ borderTop: '1px solid rgba(212,168,67,.28)' }}>
-                  <p className="gold-text italic text-[.7rem] font-bold">“Together We Thrive”</p>
-                </div>
-              </div>
-
-              {/* BACK */}
-              <div className="flip-back flip-face card overflow-hidden h-full w-full p-5 sm:p-7 flex flex-col justify-between"
-                style={{ background: 'linear-gradient(135deg,#1a2a4a,#0a0e1a 60%)' }}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0">
-                    <div className="h-8 rounded mb-4" style={{ background: 'linear-gradient(90deg,#d4a843,#24365e)' }} />
-                    <p className="muted text-[.6rem] font-bold uppercase tracking-[.16em]">Member</p>
-                    <p className="text-white font-bold text-sm truncate">{m.name}</p>
-                    <p className="muted text-[.6rem] font-bold uppercase tracking-[.16em] mt-3">Member ID</p>
-                    <p className="gold-text font-black text-base">{m.id}</p>
-                    <p className="muted text-[.6rem] font-bold uppercase tracking-[.16em] mt-3">Contact</p>
-                    <p className="text-white text-xs font-semibold">{m.phone}</p>
-                  </div>
-                  <div className="p-2 rounded-lg shrink-0" style={{ background: '#fff' }}>
-                    <QRCode value={m.id + '|' + m.name} size={104} />
-                  </div>
-                </div>
-                <div>
-                  <div className="h-9 rounded mb-3" style={{ background: 'repeating-linear-gradient(90deg,#e9eefb 0 3px,transparent 3px 6px)' }} />
-                  {m.approved ? (
-                  <button className="btn btn-gold w-full" onClick={(e) => { e.stopPropagation(); downloadCardPNG(m); }}>
-                    <Icon n="download" /> Download as PNG
-                  </button>
-                  ) : (
-                  <button className="btn btn-gray w-full opacity-50 cursor-not-allowed" onClick={(e) => { e.stopPropagation(); toast("Pending Admin Approval", "err"); }}>
-                    <Icon n="lock" /> Pending Approval
-                  </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="card p-5 reveal">
-          <h3 className="font-extrabold mb-4">{isAdmin ? "Card details (Admin only)" : "Membership Registration"}</h3>
-          <div className="space-y-4">
-            <Field label="Full name"><input placeholder="Enter your full name" value={m.name} onChange={(e) => update({ name: e.target.value })} /></Field>
-            {isAdmin && <Field label="Member ID"><input value={m.id} onChange={(e) => update({ id: e.target.value })} /></Field>}
-            <div className="grid grid-cols-2 gap-4">
-              {isAdmin && <Field label="Join date"><input type="date" value={m.joined} onChange={(e) => update({ joined: e.target.value })} /></Field>}
-              <Field label="Blood group"><select value={m.blood} onChange={(e) => update({ blood: e.target.value })}>{GROUPS.map((g) => <option key={g}>{g}</option>)}</select>
-              </Field>
-            </div>
-            <Field label="Phone"><input placeholder="Enter your phone number" value={m.phone} onChange={(e) => update({ phone: e.target.value })} /></Field>
-            
-            {isAdmin && (
-              <>
-                <Field label="Tier">
-                  <select value={m.tier} onChange={(e) => update({ tier: e.target.value })}>
-                    <option>Member</option><option>Patron</option><option>Lifetime Patron</option><option>Volunteer</option>
-                  </select>
-                </Field>
-                <Field label="Approval Status">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" checked={!!m.approved} onChange={(e) => update({ approved: e.target.checked })} className="w-4 h-4" />
-                    <span className="font-semibold text-sm">{m.approved ? "Approved for Download" : "Pending Approval"}</span>
-                  </label>
-                </Field>
-              </>
-            )}
-
-            <Field label="Photo (Upload Image)">
-              <div className="flex items-center gap-3">
-                <Avatar name={m.name} photo={m.photo} size={54} />
-                <div className="flex gap-2 flex-1">
-                  <label className="btn btn-ghost btn-sm flex-1 cursor-pointer">
-                    <Icon n="upload" /> Upload
-                    <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                      const f = e.target.files && e.target.files[0];
-                      if (!f) return;
-                      const url = await fileToDataURL(f, 420);
-                      if (url) { update({ photo: url }); toast('Photo updated'); }
-                      e.target.value = '';
-                    }} />
-                  </label>
-                  {m.photo ? <button className="btn btn-ghost btn-sm" onClick={() => update({ photo: '' })} aria-label="Remove photo"><Icon n="trash" /></button> : null}
-                </div>
-              </div>
-            </Field>
-          </div>
+      <div className="flex justify-center mb-10">
+        <div className="w-full max-w-2xl reveal">
+          <DigitalMemberCard m={m} flipped={flipped} setFlipped={setFlipped} />
           
-          {!isAdmin && (
-             <div className="mt-5">
-               <button className="btn btn-gold w-full" onClick={() => toast("Registration Details Saved! Pending admin approval.", "ok")}>
-                 <Icon n="check" /> Submit Application
-               </button>
-             </div>
-          )}
-
-          <div className="divider my-5" />
-          <p className="muted text-[.7rem] leading-relaxed">
-            Your card is the official identity of the Zwanan Jawkhela alliance. Present it at community events,
-            welfare distribution points and during elections.
-          </p>
+          <div className="card p-5 mt-5">
+             <p className="muted text-[.85rem] text-center leading-relaxed">
+               Your card is the official identity of the Zwanan Jawkhela alliance. Present it at community events,
+               welfare distribution points and during elections.
+             </p>
+          </div>
         </div>
       </div>
     </div>
@@ -2516,6 +2448,7 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
   const openComplaints = db.complaints.filter((c) => c.status !== 'Resolved').length;
   const [editApp, setEditApp] = useState(null);
   const [appModalOpen, setAppModalOpen] = useState(false);
+  const [showCardPreview, setShowCardPreview] = useState(false);
   const [appForm, setAppForm] = useState({ name: '', fatherName: '', cnic: '', phone: '', email: '', blood: 'A+', address: '', photo: '', status: 'pending', approved: false });
 
   const allApplications = Array.isArray(db.memberApplications) ? db.memberApplications : [];
@@ -2677,7 +2610,10 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
                   </div>
                 </div>
                 <div className="absolute top-2 right-2 flex flex-col gap-1">
-                  <button className="btn btn-ghost btn-sm px-2 py-1" aria-label="Edit" onClick={() => { setEditApp(item); setAppForm(item); setAppModalOpen(true); }}><Icon n="pen" /></button>
+                  {item.approved && (
+                    <button className="btn btn-ghost btn-sm px-2 py-1 text-yellow-500 hover:bg-yellow-500/10" aria-label="Digital Card" title="Preview Digital Card" onClick={() => { setEditApp(item); setAppForm(item); setShowCardPreview(true); setAppModalOpen(true); }}><Icon n="id-card" /></button>
+                  )}
+                  <button className="btn btn-ghost btn-sm px-2 py-1" aria-label="Edit" onClick={() => { setEditApp(item); setAppForm(item); setShowCardPreview(false); setAppModalOpen(true); }}><Icon n="pen" /></button>
                   <button className="btn btn-ghost btn-sm px-2 py-1 text-red-500 hover:text-red-600 hover:bg-red-500/10" aria-label="Delete" onClick={() => setDel({ type: 'application', item })}><Icon n="trash" /></button>
                 </div>
               </div>
@@ -2921,7 +2857,19 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
         <Field label="Cabinet notes"><textarea rows="5" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Actions taken, next steps, follow-up dates…" /></Field>
       </Modal>
 
-      <Modal open={appModalOpen} onClose={() => setAppModalOpen(false)} title={editApp ? 'Edit Member Details' : 'Add New Member'} footer={<React.Fragment><button className="btn btn-ghost" onClick={() => setAppModalOpen(false)}>Cancel</button><button className="btn btn-gold" onClick={saveAppForm}><Icon n="check" /> Save Member</button></React.Fragment>}>
+      <Modal open={appModalOpen} onClose={() => { setAppModalOpen(false); setShowCardPreview(false); }} title={editApp ? 'Edit Member Details' : 'Add New Member'} footer={<React.Fragment><button className="btn btn-ghost" onClick={() => { setAppModalOpen(false); setShowCardPreview(false); }}>Cancel</button><button className="btn btn-gold" onClick={saveAppForm}><Icon n="check" /> Save Member</button></React.Fragment>}>
+        <div className="flex justify-end mb-4">
+          <button className="btn btn-ghost btn-sm" onClick={() => setShowCardPreview(v => !v)}>
+            <Icon n={showCardPreview ? "eye-slash" : "eye"} /> {showCardPreview ? 'Hide Card Preview' : 'Preview Digital Card'}
+          </button>
+        </div>
+        
+        {showCardPreview ? (
+          <div className="mb-6">
+            <DigitalMemberCard m={Object.assign({}, appForm, { id: appForm.id || 'ZJ-XXXX-YYY', joined: appForm.appliedAt || iso(new Date()), tier: 'Standard' })} />
+          </div>
+        ) : null}
+
         <div className="grid grid-cols-2 gap-4">
           <Field label="Full name" className="col-span-2"><input value={appForm.name} onChange={(e) => setAppForm(Object.assign({}, appForm, { name: e.target.value }))} placeholder="Full Name" /></Field>
           <Field label="Father's name"><input value={appForm.fatherName || ''} onChange={(e) => setAppForm(Object.assign({}, appForm, { fatherName: e.target.value }))} placeholder="Father's Name" /></Field>
