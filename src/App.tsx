@@ -2347,11 +2347,14 @@ function DigitalMemberCard({ m, flipped, setFlipped }) {
 
 function MembershipPage({ db, set, isAdmin }) {
   const ref = useReveal();
+  const [tab, setTab] = useState('profile');
   const [flipped, setFlipped] = useState(false);
   const [application, setApplication] = useState({ name: '', fatherName: '', cnic: '', phone: '', address: '', blood: 'A+', email: '', photo: '' });
+  
   const m = db.member;
   const applications = Array.isArray(db.memberApplications) ? db.memberApplications : [];
   const update = (patch) => set((d) => Object.assign({}, d, { member: Object.assign({}, d.member, patch) }));
+  
   const submitApplication = (event) => {
     event.preventDefault();
     if (!application.name.trim() || !application.cnic.trim() || !application.phone.trim() || !application.address.trim()) {
@@ -2369,59 +2372,132 @@ function MembershipPage({ db, set, isAdmin }) {
   };
 
   return (
-    <div ref={ref}>
-      <SectionHead eyebrow="Join the alliance" title="Membership registration"
-        sub="Submit your details once. Your application is saved securely and appears in the admin approval queue." />
-      <form onSubmit={submitApplication} className="card p-5 sm:p-6 mb-6 reveal">
-        <div className="grid sm:grid-cols-2 gap-4">
-          <Field label="Full name" required><input required value={application.name} onChange={(e) => setApplication(Object.assign({}, application, { name: e.target.value }))} placeholder="Your full name" /></Field>
-          <Field label="Father's name"><input value={application.fatherName} onChange={(e) => setApplication(Object.assign({}, application, { fatherName: e.target.value }))} placeholder="Father's name" /></Field>
-          <Field label="CNIC / ID number" required><input required value={application.cnic} onChange={(e) => setApplication(Object.assign({}, application, { cnic: e.target.value }))} placeholder="XXXXX-XXXXXXX-X" /></Field>
-          <Field label="Phone / WhatsApp" required><input required value={application.phone} onChange={(e) => setApplication(Object.assign({}, application, { phone: e.target.value }))} placeholder="03XX-XXXXXXX" /></Field>
-          <Field label="Email"><input type="email" value={application.email} onChange={(e) => setApplication(Object.assign({}, application, { email: e.target.value }))} placeholder="Optional email" /></Field>
-          <Field label="Blood group"><select value={application.blood} onChange={(e) => setApplication(Object.assign({}, application, { blood: e.target.value }))}>{GROUPS.map((g) => <option key={g}>{g}</option>)}</select></Field>
-          <Field label="Address in Jawkhela" required className="sm:col-span-2"><input required value={application.address} onChange={(e) => setApplication(Object.assign({}, application, { address: e.target.value }))} placeholder="Village, street or neighbourhood" /></Field>
-          <Field label="Photo (Upload Image)" className="sm:col-span-2">
-            <div className="flex items-center gap-3">
-              <Avatar name={application.name} photo={application.photo} size={54} />
-              <div className="flex gap-2 flex-1">
-                <label className="btn btn-ghost btn-sm flex-1 cursor-pointer">
-                  <Icon n="upload" /> Upload
-                  <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
-                    const f = e.target.files && e.target.files[0];
-                    if (!f) return;
-                    const url = await fileToDataURL(f, 420);
-                    if (url) { setApplication(Object.assign({}, application, { photo: url })); toast('Photo updated'); }
-                    e.target.value = '';
-                  }} />
-                </label>
-                {application.photo ? <button type="button" className="btn btn-ghost btn-sm" onClick={() => setApplication(Object.assign({}, application, { photo: '' }))} aria-label="Remove photo"><Icon n="trash" /></button> : null}
+    <div ref={ref} className="max-w-4xl mx-auto reveal">
+      <div className="flex gap-2 overflow-x-auto no-sb pb-2 mb-6 border-b border-[var(--line)]">
+        <button onClick={() => setTab('profile')} className={`btn btn-sm ${tab === 'profile' ? 'btn-gold' : 'btn-ghost'}`}>
+          <Icon n="user" /> My Profile
+        </button>
+        <button onClick={() => setTab('card')} className={`btn btn-sm ${tab === 'card' ? 'btn-gold' : 'btn-ghost'}`}>
+          <Icon n="id-card" /> Digital Card
+        </button>
+        <button onClick={() => setTab('apply')} className={`btn btn-sm ${tab === 'apply' ? 'btn-gold' : 'btn-ghost'}`}>
+          <Icon n="file-signature" /> New Application
+        </button>
+      </div>
+
+      {tab === 'profile' && (
+        <div className="space-y-6">
+          <SectionHead eyebrow="Personal Details" title="My Profile" sub="Manage your account and membership status." />
+          
+          <div className="card p-6 reveal relative overflow-hidden">
+            <div className="flex flex-col sm:flex-row gap-6 items-start">
+              <div className="shrink-0 relative">
+                 <Avatar name={m?.name || 'Guest'} photo={m?.photo} size={100} className="rounded-2xl shadow-lg border-2 border-gold/20" />
+                 {m?.approved && <div className="absolute -bottom-2 -right-2 bg-green-500 text-white p-1.5 rounded-full border-2 border-[var(--bg)] shadow-md"><Icon n="check" className="text-xs" /></div>}
+              </div>
+              <div className="flex-1 min-w-0">
+                 <div className="flex items-center gap-3 flex-wrap mb-2">
+                   <h2 className="text-2xl font-bold">{m?.name || 'Not Registered'}</h2>
+                   {m?.approved ? <span className="chip chip-green">Active Member</span> : (m?.name ? <span className="chip chip-gold">Pending Approval</span> : <span className="chip bg-red-500/10 text-red-500">Unregistered</span>)}
+                 </div>
+                 
+                 {m?.name ? (
+                 <div className="grid sm:grid-cols-2 gap-x-8 gap-y-4 mt-6">
+                    <div><p className="lbl">Member ID</p><p className="font-medium text-lg">{m.id || 'Pending'}</p></div>
+                    <div><p className="lbl">Joined Date</p><p className="font-medium text-lg">{fmtDate(m.joined || m.appliedAt || new Date().toISOString())}</p></div>
+                    <div><p className="lbl">Blood Group</p><p className="font-medium text-lg text-red-500">{m.blood || 'Unknown'}</p></div>
+                    <div><p className="lbl">Contact Phone</p><p className="font-medium text-lg">{m.phone || 'N/A'}</p></div>
+                    <div><p className="lbl">Membership Tier</p><p className="font-medium text-lg gold-text">{m.tier || 'Standard'}</p></div>
+                 </div>
+                 ) : (
+                 <div className="mt-4 p-4 rounded-xl bg-gold/10 text-gold text-sm font-medium border border-gold/20">
+                   You are not registered. Please go to the 'New Application' tab to submit your details.
+                 </div>
+                 )}
               </div>
             </div>
-          </Field>
-        </div>
-        <button type="submit" className="btn btn-gold mt-5"><Icon n="paper-plane" /> Save application for approval</button>
-        {applications.filter((item) => item.cnic === application.cnic && item.status === 'pending').length > 0 ? <p className="muted text-xs mt-3">A pending application already exists for this CNIC.</p> : null}
-      </form>
-      <SectionHead eyebrow="Your Identity" title="Membership Card"
-        sub="Hover or tap the card to flip it and access download options."
-        actions={
-          <button className="btn btn-ghost" onClick={() => setFlipped((v) => !v)}>
-            <Icon n="rotate" /> Flip card
-          </button>
-        } />
-      <div className="flex justify-center mb-10">
-        <div className="w-full max-w-2xl reveal">
-          <DigitalMemberCard m={m} flipped={flipped} setFlipped={setFlipped} />
+          </div>
           
-          <div className="card p-5 mt-5">
-             <p className="muted text-[.85rem] text-center leading-relaxed">
-               Your card is the official identity of the Zwanan Jawkhela alliance. Present it at community events,
-               welfare distribution points and during elections.
-             </p>
+          <h3 className="font-extrabold text-lg mt-8 mb-4">Application History</h3>
+          <div className="space-y-3">
+             {applications.map(app => (
+                <div key={app.id} className="card p-4 flex flex-col sm:flex-row gap-4 sm:justify-between sm:items-center">
+                   <div>
+                      <p className="font-bold">{app.name}</p>
+                      <p className="text-sm muted mt-1">CNIC: {app.cnic} • Applied {fmtDate(app.appliedAt)}</p>
+                   </div>
+                   <div>
+                     {app.status === 'pending' ? <span className="chip chip-gold">Pending Approval</span> :
+                      app.status === 'approved' ? <span className="chip chip-green">Approved</span> :
+                      <span className="chip bg-red-500/10 text-red-500">Rejected</span>}
+                   </div>
+                </div>
+             ))}
+             {applications.length === 0 && <div className="card p-6 text-center muted text-sm">No recent applications found.</div>}
           </div>
         </div>
-      </div>
+      )}
+
+      {tab === 'card' && (
+        <div className="space-y-6">
+          <SectionHead eyebrow="Your Identity" title="Membership Card"
+            sub="Hover or tap the card to flip it and access download options."
+            actions={
+              <button className="btn btn-ghost" onClick={() => setFlipped((v) => !v)}>
+                <Icon n="rotate" /> Flip card
+              </button>
+            } />
+          <div className="flex justify-center mb-10">
+            <div className="w-full max-w-2xl reveal">
+              <DigitalMemberCard m={m || {}} flipped={flipped} setFlipped={setFlipped} />
+              <div className="card p-5 mt-5">
+                 <p className="muted text-[.85rem] text-center leading-relaxed">
+                   Your card is the official identity of the Zwanan Jawkhela alliance. Present it at community events,
+                   welfare distribution points and during elections.
+                 </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {tab === 'apply' && (
+        <div className="space-y-6">
+          <SectionHead eyebrow="Join the alliance" title="Membership registration"
+            sub="Submit your details once. Your application is saved securely and appears in the admin approval queue." />
+          <form onSubmit={submitApplication} className="card p-5 sm:p-6 mb-6 reveal">
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Full name" required><input required value={application.name} onChange={(e) => setApplication(Object.assign({}, application, { name: e.target.value }))} placeholder="Your full name" /></Field>
+              <Field label="Father's name"><input value={application.fatherName} onChange={(e) => setApplication(Object.assign({}, application, { fatherName: e.target.value }))} placeholder="Father's name" /></Field>
+              <Field label="CNIC / ID number" required><input required value={application.cnic} onChange={(e) => setApplication(Object.assign({}, application, { cnic: e.target.value }))} placeholder="XXXXX-XXXXXXX-X" /></Field>
+              <Field label="Phone / WhatsApp" required><input required value={application.phone} onChange={(e) => setApplication(Object.assign({}, application, { phone: e.target.value }))} placeholder="03XX-XXXXXXX" /></Field>
+              <Field label="Email"><input type="email" value={application.email} onChange={(e) => setApplication(Object.assign({}, application, { email: e.target.value }))} placeholder="Optional email" /></Field>
+              <Field label="Blood group"><select value={application.blood} onChange={(e) => setApplication(Object.assign({}, application, { blood: e.target.value }))}>{GROUPS.map((g) => <option key={g}>{g}</option>)}</select></Field>
+              <Field label="Address in Jawkhela" required className="sm:col-span-2"><input required value={application.address} onChange={(e) => setApplication(Object.assign({}, application, { address: e.target.value }))} placeholder="Village, street or neighbourhood" /></Field>
+              <Field label="Photo (Upload Image)" className="sm:col-span-2">
+                <div className="flex items-center gap-3">
+                  <Avatar name={application.name} photo={application.photo} size={54} />
+                  <div className="flex gap-2 flex-1">
+                    <label className="btn btn-ghost btn-sm flex-1 cursor-pointer">
+                      <Icon n="upload" /> Upload
+                      <input type="file" accept="image/*" className="hidden" onChange={async (e) => {
+                        const f = e.target.files && e.target.files[0];
+                        if (!f) return;
+                        const url = await fileToDataURL(f, 420);
+                        if (url) { setApplication(Object.assign({}, application, { photo: url })); toast('Photo updated'); }
+                        e.target.value = '';
+                      }} />
+                    </label>
+                    {application.photo ? <button type="button" className="btn btn-ghost btn-sm" onClick={() => setApplication(Object.assign({}, application, { photo: '' }))} aria-label="Remove photo"><Icon n="trash" /></button> : null}
+                  </div>
+                </div>
+              </Field>
+            </div>
+            <button type="submit" className="btn btn-gold mt-5"><Icon n="paper-plane" /> Save application for approval</button>
+            {applications.filter((item) => item.cnic === application.cnic && item.status === 'pending').length > 0 ? <p className="muted text-xs mt-3">A pending application already exists for this CNIC.</p> : null}
+          </form>
+        </div>
+      )}
     </div>
   );
 }
