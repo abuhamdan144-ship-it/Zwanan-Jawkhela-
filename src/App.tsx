@@ -2979,8 +2979,7 @@ const TABS = [
   { id: 'calendar', label: 'Calendar', icon: 'calendar-days' },
   { id: 'emergency', label: 'Emergency', icon: 'tower-broadcast' },
   { id: 'narcotics', label: 'پیغام', icon: 'shield-heart' },
-  { id: 'membership', label: 'Membership', icon: 'id-card' },
-  { id: 'admin', label: 'Admin', icon: 'gear' }
+  { id: 'membership', label: 'Membership', icon: 'id-card' }
 ];
 
 function App() {
@@ -3079,6 +3078,9 @@ function App() {
               ))}
             </nav>
             <div className="flex items-center gap-2 ml-auto xl:ml-0">
+              <button className={'icon-btn ' + (page === 'admin' ? 'text-gold' : '')} aria-label="Admin Dashboard" onClick={() => go('admin')}>
+                <Icon n="gear" />
+              </button>
               <button className="icon-btn" aria-label={db.settings.dark ? 'Switch to light mode' : 'Switch to dark mode'}
                 onClick={() => { const dark = !db.settings.dark; set((d) => Object.assign({}, d, { settings: Object.assign({}, d.settings, { dark: dark }) })); applyTheme(dark); }}>
                 <Icon n={db.settings.dark ? 'sun' : 'moon'} />
