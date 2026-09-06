@@ -1,0 +1,50 @@
+--- src/App.tsx
++++ src/App.tsx
+@@ -62,24 +62,33 @@
+ 
+ /* localStorage-backed state that also syncs across browser tabs */
+ function useStore(key, initial) {
+   const [val, setVal] = useState(() => {
+     const stored = readStore(key, undefined);
+     return stored === undefined ? initial : stored;
+   });
++
+   useEffect(() => {
+-    writeStore(key, val);
+-  }, [key, val]);
++    if (key === 'isAdmin') return;
++    const unsub = onSnapshot(doc(firestoreDB, 'zwanan', key), (snap) => {
++      if (snap.exists()) {
++        setVal(snap.data());
++        writeStore(key, snap.data());
++      } else {
++        setDoc(doc(firestoreDB, 'zwanan', key), initial).catch(console.error);
++      }
++    });
++    return unsub;
++  }, [key]);
++
++  const setValFirebase = useCallback((updater) => {
++    setVal((prev) => {
++      const next = typeof updater === 'function' ? updater(prev) : updater;
++      if (key !== 'isAdmin') {
++         setDoc(doc(firestoreDB, 'zwanan', key), next).catch(console.error);
++      }
++      writeStore(key, next);
++      return next;
++    });
++  }, [key]);
++
+   useEffect(() => {
+     const handler = (e) => {
+       if (e.key === NS + key) {
+@@ -88,7 +97,7 @@
+     };
+     window.addEventListener('storage', handler);
+     return () => window.removeEventListener('storage', handler);
+-  }, [key]);
+-  return [val, setVal];
++  }, [key, initial]);
++  return [val, setValFirebase];
+ }
+ 

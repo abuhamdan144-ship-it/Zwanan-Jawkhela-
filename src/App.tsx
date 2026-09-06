@@ -1,6 +1,59 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
+import { db as firestoreDB, auth } from "./firebase";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
+
+enum OperationType {
+  CREATE = 'create',
+  UPDATE = 'update',
+  DELETE = 'delete',
+  LIST = 'list',
+  GET = 'get',
+  WRITE = 'write',
+}
+
+interface FirestoreErrorInfo {
+  error: string;
+  operationType: OperationType;
+  path: string | null;
+  authInfo: {
+    userId?: string | null;
+    email?: string | null;
+    emailVerified?: boolean | null;
+    isAnonymous?: boolean | null;
+    tenantId?: string | null;
+    providerInfo?: {
+      providerId?: string | null;
+      email?: string | null;
+    }[];
+  }
+}
+function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
+  const errInfo: FirestoreErrorInfo = {
+    error: error instanceof Error ? error.message : String(error),
+    authInfo: {
+      userId: auth.currentUser?.uid,
+      email: auth.currentUser?.email,
+      emailVerified: auth.currentUser?.emailVerified,
+      isAnonymous: auth.currentUser?.isAnonymous,
+      tenantId: auth.currentUser?.tenantId,
+      providerInfo: auth.currentUser?.providerData?.map(provider => ({
+        providerId: provider.providerId,
+        email: provider.email,
+      })) || []
+    },
+    operationType,
+    path
+  }
+  console.warn('Firestore Error: ', errInfo.error);
+  if (errInfo.error.includes('Missing or insufficient permissions')) {
+    toast('Firebase permission denied. Check your Firestore rules.', 'err');
+  } else {
+    toast('Firestore Error: ' + errInfo.error, 'err');
+  }
+}
+
 
 /* =========================================================================
    ZWANAN JAWKHELA — community platform (single-file build)
@@ -68,8 +121,29 @@ function useStore(key, initial) {
     return stored === undefined ? initial : stored;
   });
   useEffect(() => {
-    writeStore(key, val);
-  }, [key, val]);
+    if (key === 'isAdmin') return;
+    const unsub = onSnapshot(doc(firestoreDB, 'zwanan', key), (snap) => {
+      if (snap.exists()) {
+        setVal(snap.data());
+        writeStore(key, snap.data());
+      } else {
+        setDoc(doc(firestoreDB, 'zwanan', key), initial).catch((err) => handleFirestoreError(err, OperationType.WRITE, 'zwanan/' + key));
+      }
+    }, (error) => {
+      handleFirestoreError(error, OperationType.GET, 'zwanan/' + key);
+    });
+    return unsub;
+  }, [key]);
+  const setValFirebase = useCallback((updater) => {
+    setVal((prev) => {
+      const next = typeof updater === 'function' ? updater(prev) : updater;
+      if (key !== 'isAdmin') {
+         setDoc(doc(firestoreDB, 'zwanan', key), next).catch((err) => handleFirestoreError(err, OperationType.WRITE, 'zwanan/' + key));
+      }
+      writeStore(key, next);
+      return next;
+    });
+  }, [key]);
   useEffect(() => {
     const handler = (e) => {
       if (e.key === NS + key) {
@@ -78,8 +152,8 @@ function useStore(key, initial) {
     };
     window.addEventListener('storage', handler);
     return () => window.removeEventListener('storage', handler);
-  }, [key]);
-  return [val, setVal];
+  }, [key, initial]);
+  return [val, setValFirebase];
 }
 
 /* ---------------- seed data ---------------- */
@@ -194,7 +268,7 @@ function seedData() {
     votes: {},
     member: {
       name: 'Sheikh Hamdan Khan', id: 'ZJ-2026-001', joined: '2019-03-01',
-      blood: 'A+', phone: '0300-1234567', photo: '', tier: 'Lifetime Patron'
+      blood: 'A+', phone: '0300-1234567', photo: '', tier: 'Lifetime Patron', approved: true
     },
     settings: { siteName: 'Zwanan Jawkhela', tagline: 'Together We Thrive', dark: true, donationGoal: 500000, account: 'Aziz Ul Haq', accountNumber: '03429395868' }
   };
@@ -689,8 +763,8 @@ function Home({ db, set, go }) {
         <div className="relative card p-4 overflow-hidden marq-wrap">
           <div className="marq-track gap-4">
             {[0, 1].map((dup) => db.cabinet.map((m) => (
-              <div key={dup + '-' + m.id} className="card2 card-hover p-5 w-[280px] shrink-0 flex flex-col items-center text-center">
-                <Avatar name={m.name} photo={m.photo} size={80} className="mb-3 ring-2 ring-[var(--line)]" />
+              <div key={dup + '-' + m.id} className="card2 card-hover p-5 w-[320px] shrink-0 flex flex-col items-center text-center">
+                <Avatar name={m.name} photo={m.photo} size={120} className="mb-3 ring-2 ring-[var(--line)]" />
                 <div className="min-w-0 w-full">
                   <p className="font-bold text-base truncate">{m.name}</p>
                   <p className="muted text-[.68rem] font-semibold uppercase tracking-wider truncate mb-2">{m.role}</p>
@@ -1105,7 +1179,7 @@ function BloodPage({ db, set, isAdmin }) {
       <SectionHead eyebrow="Lifesavers" title="Blood Bank Registry"
         sub="Every registered donor in the village, searchable by blood group."
         actions={<React.Fragment>
-          <button className="btn btn-ghost" onClick={() => setReqOpen(true)}><Icon n="hand-holding-medical" /> Request blood</button>
+          {isAdmin ? <button className="btn btn-ghost" onClick={() => setReqOpen(true)}><Icon n="hand-holding-medical" /> Request blood</button> : null}
           {isAdmin ? <button className="btn btn-gold" onClick={() => { setEdit(null); setOpen(true); }}><Icon n="user-plus" /> Add donor</button> : null}
         </React.Fragment>} />
 
@@ -1281,7 +1355,7 @@ function DonationsPage({ db, set, isAdmin }) {
                 <Icon n={copied ? 'check' : 'copy'} /> {copied ? 'Copied!' : 'Copy Number'}
               </button>
               <a className="btn btn-ghost" href={'tel:' + s.accountNumber.replace(/-/g, '')}><Icon n="phone" /> Call to donate</a>
-              <button className="btn btn-ghost" onClick={() => setOpen(true)}><Icon n="plus" /> Record a donation</button>
+              {isAdmin ? <button className="btn btn-ghost" onClick={() => setOpen(true)}><Icon n="plus" /> Record a donation</button> : null}
             </div>
             <div className="mt-6">
               <div className="flex justify-between text-xs mb-2">
@@ -1429,57 +1503,57 @@ function ComplaintsPage({ db, set, isAdmin }) {
       ) : null}
 
       <div className="grid lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-3 card p-5 reveal">
-          <h3 className="font-extrabold mb-4">File a complaint</h3>
-          <div className="grid sm:grid-cols-2 gap-4">
-            <Field label="Your name" required><input value={form.name} onChange={(e) => setForm(Object.assign({}, form, { name: e.target.value }))} /></Field>
-            <Field label="Contact" required><input value={form.contact} onChange={(e) => setForm(Object.assign({}, form, { contact: e.target.value }))} placeholder="03XX-XXXXXXX" /></Field>
-            <Field label="Category">
-              <select value={form.category} onChange={(e) => setForm(Object.assign({}, form, { category: e.target.value }))}>{COMPLAINT_CATS.map((c) => <option key={c}>{c}</option>)}</select>
-            </Field>
-            <Field label="Priority">
-              <select value={form.priority} onChange={(e) => setForm(Object.assign({}, form, { priority: e.target.value }))}>{['Low', 'Medium', 'High', 'Critical'].map((c) => <option key={c}>{c}</option>)}</select>
-            </Field>
-            <Field label="Subject" required className="sm:col-span-2"><input value={form.subject} onChange={(e) => setForm(Object.assign({}, form, { subject: e.target.value }))} placeholder="Short summary" /></Field>
-            <Field label="Description" required className="sm:col-span-2"><textarea rows="4" value={form.description} onChange={(e) => setForm(Object.assign({}, form, { description: e.target.value }))} placeholder="What happened? Include names, times and any witnesses." /></Field>
-            <Field label="Location"><input value={form.location} onChange={(e) => setForm(Object.assign({}, form, { location: e.target.value }))} placeholder="Street, chowk, house no." /></Field>
-            <Field label="Date of occurrence"><input type="date" value={form.date} onChange={(e) => setForm(Object.assign({}, form, { date: e.target.value }))} /></Field>
-
-            <div className="sm:col-span-2">
-              <span className="lbl">Evidence photos <span className="normal-case tracking-normal font-medium">(up to 5)</span></span>
-              <div
-                className={'dropzone rounded-xl p-5 text-center cursor-pointer ' + (drag ? 'on' : '')}
-                onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
-                onDragLeave={() => setDrag(false)}
-                onDrop={(e) => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files); }}
-                onClick={() => fileRef.current && fileRef.current.click()}
-                role="button" tabIndex="0"
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileRef.current && fileRef.current.click(); } }}
-                aria-label="Upload evidence photos">
-                <Icon n="cloud-arrow-up" className="text-2xl mb-2" />
-                <p className="text-sm font-bold">Drag &amp; drop images here</p>
-                <p className="muted text-xs mt-1">or click to browse — JPG / PNG / WEBP</p>
-                <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
-              </div>
-              {images.length ? (
-                <div className="flex flex-wrap gap-2 mt-3">
-                  {images.map((src, i) => (
-                    <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden group" style={{ border: '1px solid var(--line)' }}>
-                      <img src={src} alt={'Evidence ' + (i + 1)} className="w-full h-full object-cover" />
-                      <button className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-[.6rem] opacity-0 group-hover:opacity-100 transition"
-                        style={{ background: 'rgba(220,38,38,.9)', color: '#fff' }}
-                        onClick={(e) => { e.stopPropagation(); setImages(images.filter((_, k) => k !== i)); }}
-                        aria-label={'Remove image ' + (i + 1)}><Icon n="xmark" /></button>
-                    </div>
-                  ))}
+        {isAdmin ? (
+          <div className="lg:col-span-3 card p-5 reveal">
+            <h3 className="font-extrabold mb-4">File a complaint</h3>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <Field label="Your name" required><input value={form.name} onChange={(e) => setForm(Object.assign({}, form, { name: e.target.value }))} /></Field>
+              <Field label="Contact" required><input value={form.contact} onChange={(e) => setForm(Object.assign({}, form, { contact: e.target.value }))} placeholder="03XX-XXXXXXX" /></Field>
+              <Field label="Category">
+                <select value={form.category} onChange={(e) => setForm(Object.assign({}, form, { category: e.target.value }))}>{COMPLAINT_CATS.map((c) => <option key={c}>{c}</option>)}</select>
+              </Field>
+              <Field label="Priority">
+                <select value={form.priority} onChange={(e) => setForm(Object.assign({}, form, { priority: e.target.value }))}>{['Low', 'Medium', 'High', 'Critical'].map((c) => <option key={c}>{c}</option>)}</select>
+              </Field>
+              <Field label="Subject" required className="sm:col-span-2"><input value={form.subject} onChange={(e) => setForm(Object.assign({}, form, { subject: e.target.value }))} placeholder="Short summary" /></Field>
+              <Field label="Description" required className="sm:col-span-2"><textarea rows="4" value={form.description} onChange={(e) => setForm(Object.assign({}, form, { description: e.target.value }))} placeholder="What happened? Include names, times and any witnesses." /></Field>
+              <Field label="Location"><input value={form.location} onChange={(e) => setForm(Object.assign({}, form, { location: e.target.value }))} placeholder="Street, chowk, house no." /></Field>
+              <Field label="Date of occurrence"><input type="date" value={form.date} onChange={(e) => setForm(Object.assign({}, form, { date: e.target.value }))} /></Field>
+              <div className="sm:col-span-2">
+                <span className="lbl">Evidence photos <span className="normal-case tracking-normal font-medium">(up to 5)</span></span>
+                <div
+                  className={'dropzone rounded-xl p-5 text-center cursor-pointer ' + (drag ? 'on' : '')}
+                  onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+                  onDragLeave={() => setDrag(false)}
+                  onDrop={(e) => { e.preventDefault(); setDrag(false); addFiles(e.dataTransfer.files); }}
+                  onClick={() => fileRef.current && fileRef.current.click()}
+                  role="button" tabIndex="0"
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileRef.current && fileRef.current.click(); } }}
+                  aria-label="Upload evidence photos">
+                  <Icon n="cloud-arrow-up" className="text-2xl mb-2" />
+                  <p className="text-sm font-bold">Drag &amp; drop images here</p>
+                  <p className="muted text-xs mt-1">or click to browse — JPG / PNG / WEBP</p>
+                  <input ref={fileRef} type="file" accept="image/*" multiple className="hidden" onChange={(e) => { addFiles(e.target.files); e.target.value = ''; }} />
                 </div>
-              ) : null}
+                {images.length ? (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {images.map((src, i) => (
+                      <div key={i} className="relative w-20 h-20 rounded-lg overflow-hidden group" style={{ border: '1px solid var(--line)' }}>
+                        <img src={src} alt={'Evidence ' + (i + 1)} className="w-full h-full object-cover" />
+                        <button className="absolute top-1 right-1 w-5 h-5 rounded-full flex items-center justify-center text-[.6rem] opacity-0 group-hover:opacity-100 transition"
+                          style={{ background: 'rgba(220,38,38,.9)', color: '#fff' }}
+                          onClick={(e) => { e.stopPropagation(); setImages(images.filter((_, k) => k !== i)); }}
+                          aria-label={'Remove image ' + (i + 1)}><Icon n="xmark" /></button>
+                      </div>
+                    ))}
+                  </div>
+                ) : null}
+              </div>
             </div>
+            <button className="btn btn-gold w-full mt-5" onClick={submit}><Icon n="paper-plane" /> Submit complaint</button>
           </div>
-          <button className="btn btn-gold w-full mt-5" onClick={submit}><Icon n="paper-plane" /> Submit complaint</button>
-        </div>
-
-        <div className="lg:col-span-2 space-y-3">
+        ) : null}
+        <div className={isAdmin ? "lg:col-span-2 space-y-3" : "lg:col-span-5 space-y-3 max-w-2xl"}>
           <div className="card p-5">
             <p className="muted text-[.68rem] font-bold uppercase tracking-[.14em] mb-3">Case overview</p>
             <div className="grid grid-cols-3 gap-3 text-center">
@@ -1707,7 +1781,7 @@ function FundsPage({ db, set, isAdmin }) {
         sub="Income and expenditure of the community fund, open for every member to inspect."
         actions={<React.Fragment>
           <button className="btn btn-dark btn-sm" onClick={() => downloadCSV('zwanan-fund-ledger.csv', [['Date', 'Type', 'Category', 'Amount (PKR)', 'Description', 'Recorded by']].concat(db.transactions.map((t) => [t.date, t.type, t.category, t.amount, t.description, t.by])))}><Icon n="file-csv" /> Export ledger</button>
-          <button className="btn btn-gold" onClick={() => setOpen(true)}><Icon n="plus" /> Add transaction</button>
+          {isAdmin ? <button className="btn btn-gold" onClick={() => setOpen(true)}><Icon n="plus" /> Add transaction</button> : null}
         </React.Fragment>} />
 
       <div className="grid sm:grid-cols-3 gap-4 mb-6">
@@ -2057,31 +2131,32 @@ function EmergencyPage({ db, set, isAdmin }) {
       </div>
 
       <div className="grid lg:grid-cols-2 gap-4">
-        <div className="card p-5 reveal">
-          <h3 className="font-extrabold mb-4">Report an emergency</h3>
-          <div className="space-y-4">
-            <div className="grid sm:grid-cols-2 gap-4">
-              <Field label="Type">
-                <select value={form.kind} onChange={(e) => setForm(Object.assign({}, form, { kind: e.target.value }))}>{EMERGENCY_KINDS.map((k) => <option key={k}>{k}</option>)}</select>
-              </Field>
-              <Field label="Your contact"><input value={form.contact} onChange={(e) => setForm(Object.assign({}, form, { contact: e.target.value }))} placeholder="03XX-XXXXXXX" /></Field>
+        {isAdmin ? (
+          <div className="card p-5 reveal">
+            <h3 className="font-extrabold mb-4">Report an emergency</h3>
+            <div className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <Field label="Type">
+                  <select value={form.kind} onChange={(e) => setForm(Object.assign({}, form, { kind: e.target.value }))}>{EMERGENCY_KINDS.map((k) => <option key={k}>{k}</option>)}</select>
+                </Field>
+                <Field label="Your contact"><input value={form.contact} onChange={(e) => setForm(Object.assign({}, form, { contact: e.target.value }))} placeholder="03XX-XXXXXXX" /></Field>
+              </div>
+              <Field label="Location" required><input value={form.location} onChange={(e) => setForm(Object.assign({}, form, { location: e.target.value }))} placeholder="Landmark / street / house no." /></Field>
+              <Field label="What happened?" required><textarea rows="3" value={form.details} onChange={(e) => setForm(Object.assign({}, form, { details: e.target.value }))} /></Field>
+              <button className="btn btn-red w-full" onClick={() => {
+                if (!form.location.trim() || !form.details.trim()) { toast('Location and description are required', 'err'); return; }
+                const report = { id: uid('em'), kind: form.kind, location: form.location, details: form.details, contact: form.contact || '—', created: isoT(new Date()), status: 'Active' };
+                set((d) => Object.assign({}, d, {
+                  emergencies: [report].concat(d.emergencies),
+                  activity: [{ id: uid('a'), text: 'Emergency reported — ' + form.kind + ' at ' + form.location, at: iso(new Date()) }].concat(d.activity).slice(0, 40)
+                }));
+                toast('Emergency logged — cabinet notified', 'err');
+                setForm({ kind: 'Medical', location: '', details: '', contact: '' });
+              }}><Icon n="tower-broadcast" /> Send emergency alert</button>
             </div>
-            <Field label="Location" required><input value={form.location} onChange={(e) => setForm(Object.assign({}, form, { location: e.target.value }))} placeholder="Landmark / street / house no." /></Field>
-            <Field label="What happened?" required><textarea rows="3" value={form.details} onChange={(e) => setForm(Object.assign({}, form, { details: e.target.value }))} /></Field>
-            <button className="btn btn-red w-full" onClick={() => {
-              if (!form.location.trim() || !form.details.trim()) { toast('Location and description are required', 'err'); return; }
-              const report = { id: uid('em'), kind: form.kind, location: form.location, details: form.details, contact: form.contact || '—', created: isoT(new Date()), status: 'Active' };
-              set((d) => Object.assign({}, d, {
-                emergencies: [report].concat(d.emergencies),
-                activity: [{ id: uid('a'), text: 'Emergency reported — ' + form.kind + ' at ' + form.location, at: iso(new Date()) }].concat(d.activity).slice(0, 40)
-              }));
-              toast('Emergency logged — cabinet notified', 'err');
-              setForm({ kind: 'Medical', location: '', details: '', contact: '' });
-            }}><Icon n="tower-broadcast" /> Send emergency alert</button>
           </div>
-        </div>
-
-        <div className="space-y-3">
+        ) : null}
+        <div className={isAdmin ? "space-y-3" : "lg:col-span-2 space-y-3 max-w-2xl"}>
           <div className="card p-5 reveal">
             <div className="flex items-center gap-2 mb-3">
               <span className="w-2.5 h-2.5 rounded-full bg-red-500 pulse-soft" />
@@ -2226,12 +2301,16 @@ function MembershipPage({ db, set, isAdmin }) {
           <div className="flex flex-wrap gap-2">
             <button className="btn btn-ghost" onClick={() => setFlipped((v) => !v)}><Icon n="rotate" /> Flip card</button>
             <div className="relative group">
-              <button className="btn btn-gold"><Icon n="download" /> Save As...</button>
-              <div className="absolute right-0 top-full mt-2 w-32 bg-white dark:bg-navy-800 rounded-lg shadow-xl border border-[var(--line)] overflow-hidden hidden group-hover:block z-50">
-                <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--line)]" onClick={() => dlCard('png')}>PNG Image</button>
-                <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--line)]" onClick={() => dlCard('jpg')}>JPG Image</button>
-                <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--line)]" onClick={() => dlCard('pdf')}>PDF Document</button>
-              </div>
+              {m.approved ? (<>
+                <button className="btn btn-gold"><Icon n="download" /> Save As...</button>
+                <div className="absolute right-0 top-full mt-2 w-32 bg-white dark:bg-navy-800 rounded-lg shadow-xl border border-[var(--line)] overflow-hidden hidden group-hover:block z-50">
+                  <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--line)]" onClick={() => dlCard("png")}>PNG Image</button>
+                  <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--line)]" onClick={() => dlCard("jpg")}>JPG Image</button>
+                  <button className="w-full text-left px-4 py-2 text-sm hover:bg-[var(--line)]" onClick={() => dlCard("pdf")}>PDF Document</button>
+                </div>
+              </>) : (
+                <button className="btn btn-gray opacity-50 cursor-not-allowed" title="Waiting for Admin Approval" onClick={(e) => { e.preventDefault(); toast("Pending Admin Approval", "err"); }}><Icon n="lock" /> Pending Approval</button>
+              )}
             </div>
           </div>
         } />
@@ -2294,17 +2373,24 @@ function MembershipPage({ db, set, isAdmin }) {
                 </div>
                 <div>
                   <div className="h-9 rounded mb-3" style={{ background: 'repeating-linear-gradient(90deg,#e9eefb 0 3px,transparent 3px 6px)' }} />
+                  {m.approved ? (
                   <button className="btn btn-gold w-full" onClick={(e) => { e.stopPropagation(); downloadCardPNG(m); }}>
                     <Icon n="download" /> Download as PNG
                   </button>
+                  ) : (
+                  <button className="btn btn-gray w-full opacity-50 cursor-not-allowed" onClick={(e) => { e.stopPropagation(); toast("Pending Admin Approval", "err"); }}>
+                    <Icon n="lock" /> Pending Approval
+                  </button>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="card p-5 reveal">
-          <h3 className="font-extrabold mb-4">Card details</h3>
+        {isAdmin ? (
+          <div className="card p-5 reveal">
+          <h3 className="font-extrabold mb-4">Card details (Admin only)</h3>
           <div className="space-y-4">
             <Field label="Full name"><input value={m.name} onChange={(e) => update({ name: e.target.value })} /></Field>
             <Field label="Member ID"><input value={m.id} onChange={(e) => update({ id: e.target.value })} /></Field>
@@ -2318,6 +2404,12 @@ function MembershipPage({ db, set, isAdmin }) {
               <select value={m.tier} onChange={(e) => update({ tier: e.target.value })}>
                 <option>Member</option><option>Patron</option><option>Lifetime Patron</option><option>Volunteer</option>
               </select>
+            </Field>
+            <Field label="Approval Status">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" checked={!!m.approved} onChange={(e) => update({ approved: e.target.checked })} className="w-4 h-4" />
+                <span className="font-semibold text-sm">{m.approved ? "Approved for Download" : "Pending Approval"}</span>
+              </label>
             </Field>
             <Field label="Photo">
               <div className="flex items-center gap-3">
@@ -2344,6 +2436,7 @@ function MembershipPage({ db, set, isAdmin }) {
             welfare distribution points and during elections.
           </p>
         </div>
+        ) : null}
       </div>
     </div>
   );
@@ -2801,7 +2894,7 @@ function App() {
   const [db, set] = useStore('db', seedData());
   const [page, setPage] = useState('home');
   const [menu, setMenu] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(() => readStore('isAdmin', true) !== false);
+  const [isAdmin, setIsAdmin] = useState(() => readStore('isAdmin', false) === true);
   const [toasts, setToasts] = useState([]);
   const mainRef = useRef(null);
   const headRef = useRef(null);
@@ -2866,7 +2959,7 @@ function App() {
       case 'emergency': return <EmergencyPage {...pageProps} />;
       case 'narcotics': return <NarcoticsPage {...pageProps} />;
       case 'membership': return <MembershipPage {...pageProps} />;
-      case 'admin': return <AdminPage {...pageProps} setAdmin={setIsAdmin} applyTheme={applyTheme} resetAll={resetAll} />;
+      case 'admin': return <AdminPage {...pageProps} setAdmin={(val) => { setIsAdmin(val); writeStore('isAdmin', val); }} applyTheme={applyTheme} resetAll={resetAll} />;
       default: return <Home db={db} set={set} go={go} />;
     }
   })();

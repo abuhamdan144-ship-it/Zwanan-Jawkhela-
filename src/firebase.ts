@@ -13,4 +13,8 @@ const firebaseConfig = {
 };
 
 export const firebaseApp = initializeApp(firebaseConfig);
+import { getAuth } from "firebase/auth";
+import { setLogLevel } from 'firebase/firestore';
+setLogLevel('silent');
 export const db = getFirestore(firebaseApp);
+export const auth = getAuth(firebaseApp);
