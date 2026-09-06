@@ -2514,8 +2514,25 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
   const income = db.transactions.filter((t) => t.type === 'Income').reduce((a, b) => a + Number(b.amount), 0);
   const expense = db.transactions.filter((t) => t.type === 'Expense').reduce((a, b) => a + Number(b.amount), 0);
   const openComplaints = db.complaints.filter((c) => c.status !== 'Resolved').length;
+  const [editApp, setEditApp] = useState(null);
+  const [appModalOpen, setAppModalOpen] = useState(false);
+  const [appForm, setAppForm] = useState({ name: '', fatherName: '', cnic: '', phone: '', email: '', blood: 'A+', address: '', photo: '', status: 'pending', approved: false });
+
   const allApplications = Array.isArray(db.memberApplications) ? db.memberApplications : [];
   const pendingApplications = allApplications.filter((item) => item.status === 'pending');
+
+  const saveAppForm = () => {
+    if (!appForm.name.trim() || !appForm.cnic.trim()) { toast('Name and CNIC are required', 'err'); return; }
+    if (editApp) {
+      set((d) => Object.assign({}, d, { memberApplications: (d.memberApplications || []).map((x) => x.id === editApp.id ? Object.assign({}, x, appForm) : x) }));
+      toast('Member details updated');
+    } else {
+      const record = Object.assign({}, appForm, { id: uid('app'), appliedAt: iso(new Date()), approved: appForm.status === 'approved' });
+      set((d) => Object.assign({}, d, { memberApplications: [record].concat(d.memberApplications || []) }));
+      toast('Member added');
+    }
+    setEditApp(null); setAppModalOpen(false); setAppForm({ name: '', fatherName: '', cnic: '', phone: '', email: '', blood: 'A+', address: '', photo: '', status: 'pending', approved: false });
+  };
 
   const saveMember = () => {
     if (!mForm.name.trim() || !mForm.role.trim()) { toast('Name and role are required', 'err'); return; }
@@ -2643,20 +2660,29 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
 
       {tab === 'members' && (
         <div className="space-y-4">
-          <SectionHead eyebrow="Community" title="All Members" sub="List of approved and registered members." />
+          <SectionHead eyebrow="Community" title="All Members" sub="Manage registered members and applications." 
+            actions={<button className="btn btn-gold btn-sm" onClick={() => { setEditApp(null); setAppForm({ name: '', fatherName: '', cnic: '', phone: '', email: '', blood: 'A+', address: '', photo: '', status: 'approved', approved: true }); setAppModalOpen(true); }}><Icon n="plus" /> Add Member</button>} />
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {allApplications.filter(a => a.approved).map((item) => (
-              <div key={item.id} className="card p-4 flex gap-3 items-center reveal">
+            {allApplications.map((item) => (
+              <div key={item.id} className="card p-4 flex gap-3 items-center reveal relative">
                 <Avatar name={item.name} photo={item.photo} size={54} />
                 <div className="min-w-0 flex-1">
                   <p className="font-bold truncate">{item.name}</p>
                   <p className="muted text-[.68rem] truncate">CNIC: {item.cnic}</p>
                   <p className="muted text-[.68rem] truncate">Phone: {item.phone}</p>
-                  <span className="chip chip-gold mt-2 inline-flex"><Icon n="id-badge" /> ID: {item.id.split('-')[1] || item.id}</span>
+                  <div className="mt-2 flex gap-2 items-center flex-wrap">
+                    {item.status === 'pending' ? <span className="chip chip-gold inline-flex"><Icon n="clock" /> Pending</span> :
+                     item.status === 'rejected' ? <span className="chip bg-red-500/10 text-red-500 inline-flex"><Icon n="xmark" /> Rejected</span> :
+                     <span className="chip chip-gold inline-flex"><Icon n="id-badge" /> ID: {item.id.split('-')[1] || item.id}</span>}
+                  </div>
+                </div>
+                <div className="absolute top-2 right-2 flex flex-col gap-1">
+                  <button className="btn btn-ghost btn-sm px-2 py-1" aria-label="Edit" onClick={() => { setEditApp(item); setAppForm(item); setAppModalOpen(true); }}><Icon n="pen" /></button>
+                  <button className="btn btn-ghost btn-sm px-2 py-1 text-red-500 hover:text-red-600 hover:bg-red-500/10" aria-label="Delete" onClick={() => setDel({ type: 'application', item })}><Icon n="trash" /></button>
                 </div>
               </div>
             ))}
-            {allApplications.filter(a => a.approved).length === 0 && <div className="card p-10 col-span-full text-center muted text-sm">No approved members yet. Go to Dashboard to approve pending applications.</div>}
+            {allApplications.length === 0 && <div className="card p-10 col-span-full text-center muted text-sm">No members yet.</div>}
           </div>
         </div>
       )}
@@ -2895,12 +2921,34 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
         <Field label="Cabinet notes"><textarea rows="5" value={note} onChange={(e) => setNote(e.target.value)} placeholder="Actions taken, next steps, follow-up dates…" /></Field>
       </Modal>
 
+      <Modal open={appModalOpen} onClose={() => setAppModalOpen(false)} title={editApp ? 'Edit Member Details' : 'Add New Member'} footer={<React.Fragment><button className="btn btn-ghost" onClick={() => setAppModalOpen(false)}>Cancel</button><button className="btn btn-gold" onClick={saveAppForm}><Icon n="check" /> Save Member</button></React.Fragment>}>
+        <div className="grid grid-cols-2 gap-4">
+          <Field label="Full name" className="col-span-2"><input value={appForm.name} onChange={(e) => setAppForm(Object.assign({}, appForm, { name: e.target.value }))} placeholder="Full Name" /></Field>
+          <Field label="Father's name"><input value={appForm.fatherName || ''} onChange={(e) => setAppForm(Object.assign({}, appForm, { fatherName: e.target.value }))} placeholder="Father's Name" /></Field>
+          <Field label="CNIC"><input value={appForm.cnic} onChange={(e) => setAppForm(Object.assign({}, appForm, { cnic: e.target.value }))} placeholder="CNIC" /></Field>
+          <Field label="Phone"><input value={appForm.phone} onChange={(e) => setAppForm(Object.assign({}, appForm, { phone: e.target.value }))} placeholder="Phone" /></Field>
+          <Field label="Blood Group"><select value={appForm.blood} onChange={(e) => setAppForm(Object.assign({}, appForm, { blood: e.target.value }))}>{['A+','A-','B+','B-','O+','O-','AB+','AB-'].map((g) => <option key={g}>{g}</option>)}</select></Field>
+          <Field label="Status"><select value={appForm.status} onChange={(e) => setAppForm(Object.assign({}, appForm, { status: e.target.value, approved: e.target.value === 'approved' }))}><option value="pending">Pending</option><option value="approved">Approved</option><option value="rejected">Rejected</option></select></Field>
+          <Field label="Address" className="col-span-2"><input value={appForm.address} onChange={(e) => setAppForm(Object.assign({}, appForm, { address: e.target.value }))} placeholder="Address" /></Field>
+        </div>
+      </Modal>
+
       <Confirm open={confirmReset} title="Reset all data?" yesLabel="Reset everything"
         text="This wipes every entry you have added and restores the original demo data. It cannot be undone."
         onYes={() => { resetAll(); setConfirmReset(false); }} onNo={() => setConfirmReset(false)} />
-      <Confirm open={!!del} title="Remove cabinet member" yesLabel="Delete"
-        text={del ? 'Remove ' + del.name + ' from the cabinet?' : ''}
-        onYes={() => { set((d) => Object.assign({}, d, { cabinet: d.cabinet.filter((x) => x.id !== del.id) })); setDel(null); toast('Member removed'); }} onNo={() => setDel(null)} />
+      
+      <Confirm open={!!del} title={del?.type === 'application' ? "Delete member" : "Remove cabinet member"} yesLabel="Delete"
+        text={del ? (del.type === 'application' ? 'Permanently delete ' + del.item.name + ' from the community?' : 'Remove ' + del.name + ' from the cabinet?') : ''}
+        onYes={() => {
+          if (del?.type === 'application') {
+            set((d) => Object.assign({}, d, { memberApplications: (d.memberApplications || []).filter((x) => x.id !== del.item.id) }));
+            toast('Member deleted');
+          } else {
+            set((d) => Object.assign({}, d, { cabinet: d.cabinet.filter((x) => x.id !== del.id) }));
+            toast('Member removed');
+          }
+          setDel(null);
+        }} onNo={() => setDel(null)} />
     </div>
   );
 }
