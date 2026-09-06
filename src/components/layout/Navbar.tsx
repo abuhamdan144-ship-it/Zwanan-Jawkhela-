@@ -56,10 +56,7 @@ export function Navbar() {
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center gap-2">
-              <div className="bg-white p-1 rounded-md shadow-sm">
-                <Logo src="/IMG_0342.JPG" alt="Zwanan Jawkhela Logo" className="h-8 w-auto object-contain" />
-              </div>
-              <span className="text-2xl font-bold font-urdu tracking-wide text-white">Zwanan Jawkhela</span>
+              <img src="/zwanan-jawkhela-3d-logo.png" alt="Zwanan Jawkhela — Together We Thrive" className="h-12 w-auto max-w-[190px] object-contain drop-shadow-[0_4px_12px_rgba(0,0,0,.35)]" />
             </Link>
           </div>
 

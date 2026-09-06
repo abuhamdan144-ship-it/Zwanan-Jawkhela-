@@ -236,12 +236,7 @@ export default function Membership() {
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex justify-center">
           <div className="bg-white w-[350px] rounded-xl overflow-hidden shadow-2xl border border-gray-200">
             <div className="bg-primary-900 text-white p-4 text-center relative">
-              <div className="flex justify-center mb-3">
-                <div className="bg-white p-1 rounded-lg shadow-sm">
-                  <Logo src="/IMG_0342.jpeg" alt="Logo" className="h-10 w-10 object-contain" />
-                </div>
-              </div>
-              <h3 className="font-bold font-urdu text-xl tracking-wider">Zwanan Jawkhela</h3>
+              <img src="/zwanan-jawkhela-3d-logo.png" alt="Zwanan Jawkhela — Together We Thrive" className="mx-auto mb-3 h-16 w-auto max-w-[260px] object-contain" />
               <p className="text-xs text-primary-200">Official Membership Card</p>
             </div>
             <div className="p-6 flex flex-col items-center">

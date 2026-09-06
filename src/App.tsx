@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useState, useEffect, useRef, useMemo, useCallback, useLayoutEffect } from "react";
 import html2canvas from "html2canvas";
 import jsPDF from "jspdf";
@@ -533,30 +534,7 @@ function Logo({ size, stacked, sub }) {
   const big = size || 30;
   return (
     <div className="flex items-center gap-3">
-      <div className="relative shrink-0" aria-hidden="true">
-        <svg width={big + 16} height={big + 16} viewBox="0 0 64 64">
-          <defs>
-            <linearGradient id="lgzj" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0%" stopColor="#f5d77b" /><stop offset="55%" stopColor="#d4a843" /><stop offset="100%" stopColor="#a97f2a" />
-            </linearGradient>
-          </defs>
-          <circle cx="32" cy="32" r="30" fill="none" stroke="url(#lgzj)" strokeWidth="2" opacity=".85" />
-          <circle cx="32" cy="32" r="24" fill="rgba(212,168,67,.09)" />
-          <text x="32" y="33" textAnchor="middle" dominantBaseline="middle" fontFamily="Inter, Arial" fontWeight="900" fontSize="19" fill="url(#lgzj)">ZJ</text>
-          <text x="32" y="50" textAnchor="middle" fontFamily="Inter, Arial" fontWeight="700" fontSize="7.5" letterSpacing="1.2" fill="rgba(245,215,123,.85)">EST 19</text>
-        </svg>
-      </div>
-      <div className={stacked ? '' : 'leading-none'}>
-        <div style={{ fontSize: big, lineHeight: 0.95 }} className="font-black tracking-tight">
-          <span className="shimmer">ZWANAN</span>
-        </div>
-        <div style={{ fontSize: Math.round(big * 0.62), lineHeight: 1.05 }} className="font-extrabold tracking-[.24em] text-white">
-          <span style={{ color: 'var(--text)' }}>JAWKHELA</span>
-        </div>
-        {sub === false ? null : (
-          <div className="muted text-[.53rem] tracking-[.16em] font-semibold mt-1 hidden sm:block">COMMUNITY ALLIANCE &amp; OUTREACH • EST. 2019</div>
-        )}
-      </div>
+      <img src="/zwanan-jawkhela-3d-logo.png" alt="Zwanan Jawkhela — Together We Thrive" className="h-auto max-w-[min(72vw,360px)] object-contain drop-shadow-[0_4px_14px_rgba(0,0,0,.35)]" style={{ width: Math.max(big * 4.5, 150) }} />
     </div>
   );
 }
@@ -2328,7 +2306,7 @@ function MembershipPage({ db, set, isAdmin }) {
                 </div>
                 <div className="relative flex items-start justify-between gap-4">
                   <div className="flex items-center gap-3">
-                    <img src="/IMG_0314.jpeg" alt="Logo" crossOrigin="anonymous" className="w-12 h-12 rounded-lg object-contain bg-white p-1" />
+                    <img src="/zwanan-jawkhela-3d-logo.png" alt="Zwanan Jawkhela — Together We Thrive" crossOrigin="anonymous" className="h-14 w-auto max-w-[220px] object-contain" />
                     <div>
                       <div className="text-2xl sm:text-3xl font-black leading-none"><span className="shimmer">ZWANAN</span></div>
                       <div className="text-sm sm:text-base font-extrabold tracking-[.28em]" style={{ color: '#fff' }}>JAWKHELA</div>

@@ -52,8 +52,8 @@ export default function Home() {
             transition={{ duration: 0.8, ease: "easeOut" }}
             className="flex justify-center mb-6"
           >
-            <div className="bg-white p-2 rounded-2xl shadow-xl backdrop-blur-sm inline-block">
-              <Logo src="/IMG_0342.JPG" alt="Zwanan Jawkhela Logo" className="h-20 w-20 md:h-28 md:w-28 object-contain" fallbackText="ZJ" />
+            <div className="rounded-2xl border border-white/15 bg-white/[.06] p-3 shadow-xl backdrop-blur-sm inline-block">
+              <img src="/zwanan-jawkhela-3d-logo.png" alt="Zwanan Jawkhela — Together We Thrive" className="h-auto w-[min(78vw,360px)] object-contain" />
             </div>
           </motion.div>
 
