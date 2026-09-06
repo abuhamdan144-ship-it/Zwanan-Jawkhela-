@@ -2399,30 +2399,35 @@ function MembershipPage({ db, set, isAdmin }) {
           </div>
         </div>
 
-        {isAdmin ? (
-          <div className="card p-5 reveal">
-          <h3 className="font-extrabold mb-4">Card details (Admin only)</h3>
+        <div className="card p-5 reveal">
+          <h3 className="font-extrabold mb-4">{isAdmin ? "Card details (Admin only)" : "Membership Registration"}</h3>
           <div className="space-y-4">
-            <Field label="Full name"><input value={m.name} onChange={(e) => update({ name: e.target.value })} /></Field>
-            <Field label="Member ID"><input value={m.id} onChange={(e) => update({ id: e.target.value })} /></Field>
+            <Field label="Full name"><input placeholder="Enter your full name" value={m.name} onChange={(e) => update({ name: e.target.value })} /></Field>
+            {isAdmin && <Field label="Member ID"><input value={m.id} onChange={(e) => update({ id: e.target.value })} /></Field>}
             <div className="grid grid-cols-2 gap-4">
-              <Field label="Join date"><input type="date" value={m.joined} onChange={(e) => update({ joined: e.target.value })} /></Field>
+              {isAdmin && <Field label="Join date"><input type="date" value={m.joined} onChange={(e) => update({ joined: e.target.value })} /></Field>}
               <Field label="Blood group"><select value={m.blood} onChange={(e) => update({ blood: e.target.value })}>{GROUPS.map((g) => <option key={g}>{g}</option>)}</select>
               </Field>
             </div>
-            <Field label="Phone"><input value={m.phone} onChange={(e) => update({ phone: e.target.value })} /></Field>
-            <Field label="Tier">
-              <select value={m.tier} onChange={(e) => update({ tier: e.target.value })}>
-                <option>Member</option><option>Patron</option><option>Lifetime Patron</option><option>Volunteer</option>
-              </select>
-            </Field>
-            <Field label="Approval Status">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" checked={!!m.approved} onChange={(e) => update({ approved: e.target.checked })} className="w-4 h-4" />
-                <span className="font-semibold text-sm">{m.approved ? "Approved for Download" : "Pending Approval"}</span>
-              </label>
-            </Field>
-            <Field label="Photo">
+            <Field label="Phone"><input placeholder="Enter your phone number" value={m.phone} onChange={(e) => update({ phone: e.target.value })} /></Field>
+            
+            {isAdmin && (
+              <>
+                <Field label="Tier">
+                  <select value={m.tier} onChange={(e) => update({ tier: e.target.value })}>
+                    <option>Member</option><option>Patron</option><option>Lifetime Patron</option><option>Volunteer</option>
+                  </select>
+                </Field>
+                <Field label="Approval Status">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" checked={!!m.approved} onChange={(e) => update({ approved: e.target.checked })} className="w-4 h-4" />
+                    <span className="font-semibold text-sm">{m.approved ? "Approved for Download" : "Pending Approval"}</span>
+                  </label>
+                </Field>
+              </>
+            )}
+
+            <Field label="Photo (Upload Image)">
               <div className="flex items-center gap-3">
                 <Avatar name={m.name} photo={m.photo} size={54} />
                 <div className="flex gap-2 flex-1">
@@ -2441,13 +2446,21 @@ function MembershipPage({ db, set, isAdmin }) {
               </div>
             </Field>
           </div>
+          
+          {!isAdmin && (
+             <div className="mt-5">
+               <button className="btn btn-gold w-full" onClick={() => toast("Registration Details Saved! Pending admin approval.", "ok")}>
+                 <Icon n="check" /> Submit Application
+               </button>
+             </div>
+          )}
+
           <div className="divider my-5" />
           <p className="muted text-[.7rem] leading-relaxed">
             Your card is the official identity of the Zwanan Jawkhela alliance. Present it at community events,
             welfare distribution points and during elections.
           </p>
         </div>
-        ) : null}
       </div>
     </div>
   );
@@ -2516,7 +2529,7 @@ function AdminPage({ db, set, isAdmin, setAdmin, applyTheme, resetAll }) {
            <Field label="Username"><input placeholder="Admin@zj.com" value={adminUser} onChange={e=>setAdminUser(e.target.value)} /></Field>
            <Field label="Password"><input type="password" placeholder="••••" value={adminPwd} onChange={e=>setAdminPwd(e.target.value)} /></Field>
            <button className="btn btn-gold w-full" onClick={() => {
-              if (adminUser.toLowerCase() === 'admin@zj.com' && adminPwd === '123456') { setAdmin(true); } else { toast('Invalid credentials', 'err'); }
+              if (adminUser.trim().toLowerCase() === 'admin@zj.com' && adminPwd.trim() === '123456') { setAdmin(true); } else { toast('Invalid credentials', 'err'); }
            }}>Login</button>
         </div>
       </div>
